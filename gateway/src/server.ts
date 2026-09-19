@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 import { WebSocketServer, type WebSocket } from "ws";
 import { config } from "./config.js";
+import { attachLiveServer } from "./live.js";
 import { initStore } from "./store.js";
 import { ensureUser } from "./provision.js";
 import { runTurn, runTurnStreaming, queueContext, drainContext } from "./turn.js";
@@ -296,7 +297,16 @@ app.post("/context", async (req, res) => {
 // ---------- WS: the app's event channel (protocol v3 handshake) ----------
 
 const httpServer = createServer(app);
-const wss = new WebSocketServer({ server: httpServer });
+attachLiveServer(httpServer, {
+  tokens: config.tokens,
+  apiKey: process.env.OPENAI_API_KEY,
+  backendModel: process.env.LIVE_BACKEND_MODEL ?? "gpt-5.6-luna",
+});
+const wss = new WebSocketServer({ noServer: true });
+httpServer.on("upgrade", (req, socket, head) => {
+  if ((req.url ?? "/").split("?")[0] === "/v1/live") return;
+  wss.handleUpgrade(req, socket, head, (ws) => wss.emit("connection", ws, req));
+});
 
 wss.on("connection", (ws: WebSocket) => {
   // Mirror the local gateway's opening move so OpenClawEventClient handshakes unchanged.
