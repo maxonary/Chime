@@ -7,13 +7,16 @@ struct MessageListView: View {
     ScrollViewReader { proxy in
       ScrollView {
         VStack(alignment: .leading, spacing: 8) {
-          ForEach(Array(messages.suffix(10)), id: \.id) { message in
+          ForEach(messages, id: \.id) { message in
             HStack(alignment: .top, spacing: 8) {
               if message.role == .user {
                 Spacer()
               }
 
               VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 2) {
+                Text(message.role == .user ? "You" : "Chime")
+                  .font(.caption2.bold())
+                  .foregroundStyle(.secondary)
                 Text(message.content)
                   .font(.caption)
                   .lineLimit(nil)
@@ -26,7 +29,7 @@ struct MessageListView: View {
                 }
               }
               .padding(8)
-              .background(message.role == .user ? Color.blue : Color.gray)
+              .background(message.role == .user ? Color.teal.opacity(0.3) : Color.white.opacity(0.08))
               .cornerRadius(8)
 
               if message.role == .assistant {
@@ -37,6 +40,9 @@ struct MessageListView: View {
           }
         }
         .padding(8)
+        .onChange(of: messages.last?.content) { _, _ in
+          if let last = messages.last { proxy.scrollTo(last.id, anchor: .bottom) }
+        }
         .onAppear {
           if let last = messages.last {
             proxy.scrollTo(last.id)

@@ -1,79 +1,64 @@
 import SwiftUI
 
 struct SettingsView: View {
-  @EnvironmentObject var sessionManager: AgentSessionManager
-  @Environment(\.dismiss) var dismiss
+  @Environment(\.dismiss) private var dismiss
   @State private var settings = AppSettings.load()
+  @State private var gatewayAddress = AppSettings.load().gatewayURL.absoluteString
+  @State private var validationError: String?
 
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 16) {
-        HStack {
-          Text("Settings")
-            .font(.title3.bold())
-          Spacer()
-          Button(action: { dismiss() }) {
-            Image(systemName: "xmark.circle.fill")
+    NavigationStack {
+      Form {
+        Section("Connection") {
+          TextField("Gateway URL", text: $gatewayAddress)
+            .textContentType(.URL)
+            .autocorrectionDisabled()
+          SecureField("Access token", text: $settings.userToken)
+            .autocorrectionDisabled()
+        }
+        Section("Voice") {
+          Picker("Voice", selection: Binding(get: { settings.liveVoice ?? "marin" }, set: { settings.liveVoice = $0 })) {
+            Text("Marin").tag("marin")
+            Text("Gleam").tag("gleam")
+            Text("Quartz").tag("quartz")
+            Text("Willow").tag("willow")
+            Text("Vesper").tag("vesper")
           }
+          Toggle("Web search", isOn: $settings.autoResearch)
         }
-
-        VStack(alignment: .leading, spacing: 8) {
-          Text("Gateway URL")
-            .font(.caption.bold())
-          TextField("URL", text: .init(
-            get: { settings.gatewayURL.absoluteString },
-            set: { settings.gatewayURL = URL(string: $0) ?? settings.gatewayURL }
-          ))
-          .font(.caption2)
-        }
-
-        VStack(alignment: .leading, spacing: 8) {
-          Text("Auth Token")
-            .font(.caption.bold())
-          SecureField("Token", text: $settings.userToken)
+        Section {
+          Text("GPT-Live handles your voice conversation. Web search helps answer questions about current information.")
             .font(.caption2)
+            .foregroundStyle(.secondary)
+          Text("Your OpenAI key belongs on the gateway. Enter only your Chime access token here.")
+            .font(.caption2)
+            .foregroundStyle(.secondary)
         }
-
-        VStack(alignment: .leading, spacing: 8) {
-          Text("Model")
-            .font(.caption.bold())
-          Picker("Model", selection: $settings.agentModel) {
-            Text("Claude Opus 5").tag("claude-opus-5")
-            Text("Claude Sonnet 5").tag("claude-sonnet-5")
-          }
-          .font(.caption2)
+        if let validationError {
+          Text(validationError).font(.caption2).foregroundStyle(.orange)
         }
-
-        VStack(alignment: .leading, spacing: 8) {
-          Text("Web Research")
-            .font(.caption.bold())
-          Toggle("Auto-research", isOn: $settings.autoResearch)
-            .font(.caption)
-        }
-
-        Button(action: { saveAndDismiss() }) {
-          Text("Save & Close")
-            .font(.caption.bold())
-            .frame(maxWidth: .infinity)
-            .padding(10)
-            .background(Color.blue)
-            .foregroundColor(.white)
-            .cornerRadius(6)
-        }
-
-        Spacer()
+        Button("Save settings") { save() }
+          .tint(.mint)
       }
-      .padding(12)
+      .navigationTitle("Settings")
     }
   }
 
-  private func saveAndDismiss() {
+  private func save() {
+    let address = gatewayAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard let url = URL(string: address), let host = url.host, !host.isEmpty,
+          ["https", "http"].contains(url.scheme ?? ""), url.user == nil, url.password == nil,
+          url.query == nil, url.fragment == nil else {
+      validationError = "Enter a full gateway address, such as https://chime.example.com."
+      return
+    }
+    guard !settings.userToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+      validationError = "Enter the access token configured on your gateway."
+      return
+    }
+    settings.gatewayURL = url
+    settings.userToken = settings.userToken.trimmingCharacters(in: .whitespacesAndNewlines)
     settings.save()
     dismiss()
   }
-}
-
-#Preview {
-  SettingsView()
-    .environmentObject(AgentSessionManager())
 }

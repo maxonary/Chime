@@ -197,15 +197,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3963681D2A7B422100CD562D /* chimeApp.swift in Sources */,
-				3963681E2A7B422100CD562D /* AgentSessionManager.swift in Sources */,
-				3963681F2A7B422100CD562D /* ConversationStore.swift in Sources */,
-				3963682A2A7B422100CD562D /* AppSettings.swift in Sources */,
-				3963682B2A7B422100CD562D /* Message.swift in Sources */,
-				3963682C2A7B422100CD562D /* ContentView.swift in Sources */,
-				3963682D2A7B422100CD562D /* MessageListView.swift in Sources */,
-				3963682E2A7B422100CD562D /* VoiceControlView.swift in Sources */,
-				3963682F2A7B422100CD562D /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -347,6 +338,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = chime;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Chime uses your microphone for live voice conversations.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKWatchOnly = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -380,6 +372,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = chime;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Chime uses your microphone for live voice conversations.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKWatchOnly = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -410,6 +403,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = Q37KAF726J;
 				INFOPLIST_KEY_CFBundleDisplayName = chime;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Chime uses your microphone for live voice conversations.";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = maxonary.chime;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -427,6 +421,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = Q37KAF726J;
 				INFOPLIST_KEY_CFBundleDisplayName = chime;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Chime uses your microphone for live voice conversations.";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = maxonary.chime;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -1,84 +1,54 @@
 import SwiftUI
+import WatchKit
 
 struct VoiceControlView: View {
   @EnvironmentObject var sessionManager: AgentSessionManager
-  @State private var textInput = ""
-  @State private var isSendingEnabled = false
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var glowing = false
+  private var dialSize: CGFloat { WKInterfaceDevice.current().screenBounds.width < 180 ? 56 : 80 }
 
   var body: some View {
-    VStack(spacing: 12) {
-      if !sessionManager.isListening {
-        HStack(spacing: 8) {
-          TextField("Message...", text: $textInput)
-            .font(.caption)
-
-          Button(action: send) {
-            Image(systemName: "paperplane.fill")
-              .font(.caption)
-          }
-          .disabled(!isSendingEnabled)
-          .foregroundColor(isSendingEnabled ? .blue : .gray)
-        }
-      } else {
-        HStack(spacing: 8) {
+    VStack(spacing: 6) {
+      Button {
+        if sessionManager.isListening { sessionManager.stopListening() }
+        else { sessionManager.startListening() }
+      } label: {
+        ZStack {
           Circle()
-            .fill(Color.red)
-            .frame(width: 8, height: 8)
-
-          Text("Listening...")
-            .font(.caption)
-
-          Spacer()
-
-          Button(action: { sessionManager.stopListening() }) {
-            Image(systemName: "stop.fill")
-              .font(.caption)
+            .stroke(Color.mint.opacity(0.12), lineWidth: 1)
+            .frame(width: dialSize, height: dialSize)
+          Circle()
+            .fill(Color.mint.opacity(sessionManager.isConnected ? 0.18 : 0.07))
+            .frame(width: dialSize * 0.85, height: dialSize * 0.85)
+            .scaleEffect(glowing && sessionManager.isConnected && !reduceMotion ? 1.10 : 1)
+          Circle()
+            .fill(LinearGradient(colors: [Color.mint, Color.teal], startPoint: .topLeading, endPoint: .bottomTrailing))
+            .frame(width: dialSize * 0.7, height: dialSize * 0.7)
+          if sessionManager.state == .connecting || sessionManager.state == .ending {
+            ProgressView().tint(.black)
+          } else {
+            Image(systemName: sessionManager.isConnected ? "stop.fill" : "waveform")
+              .font(.system(size: dialSize * 0.3, weight: .medium))
+              .foregroundStyle(.black)
           }
         }
-        .padding(8)
-        .background(Color.gray.opacity(0.3))
-        .cornerRadius(8)
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
       }
+      .buttonStyle(.plain)
+      .disabled(sessionManager.state == .ending)
+      .accessibilityLabel(sessionManager.isListening ? "End conversation" : "Start conversation")
+      .accessibilityHint("Talk naturally with Chime")
 
-      Button(action: toggleListening) {
-        Image(systemName: sessionManager.isListening ? "mic.fill" : "mic")
-          .font(.system(size: 20))
-          .frame(maxWidth: .infinity)
-          .frame(height: 44)
-          .background(sessionManager.isListening ? Color.red : Color.blue)
-          .foregroundColor(.white)
-          .cornerRadius(8)
-      }
-
-      if let error = sessionManager.error {
-        Text(error)
+      VStack(spacing: 3) {
+        Text(sessionManager.state == .idle ? "Let’s talk" : sessionManager.statusText)
+          .font(.system(.headline, design: .rounded))
+        Text(sessionManager.state == .idle ? "Tap to start" : sessionManager.state == .ending ? "Saving your transcript" : "Tap to end")
           .font(.caption2)
-          .foregroundColor(.red)
-          .lineLimit(2)
+          .foregroundStyle(.secondary)
       }
     }
-    .padding(12)
-    .background(Color.gray.opacity(0.2))
-    .onChange(of: textInput) { _, newValue in
-      isSendingEnabled = !newValue.trimmingCharacters(in: .whitespaces).isEmpty
-    }
+    .onAppear { glowing = true }
+    .animation(reduceMotion ? nil : .easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: glowing)
   }
-
-  private func send() {
-    sessionManager.sendMessage(textInput)
-    textInput = ""
-  }
-
-  private func toggleListening() {
-    if sessionManager.isListening {
-      sessionManager.stopListening()
-    } else {
-      sessionManager.startListening()
-    }
-  }
-}
-
-#Preview {
-  VoiceControlView()
-    .environmentObject(AgentSessionManager())
 }
