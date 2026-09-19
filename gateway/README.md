@@ -1,4 +1,49 @@
-# VisionClaw Gateway (hosted action agent, beta)
+# Chime gateway
+
+## GPT-Live voice
+
+The Watch connects to `WS /v1/live` using `Authorization: Bearer <gateway-token>`.
+The gateway authenticates before opening an upstream connection and keeps the
+OpenAI project key on the server. Live voice does not require Anthropic, Perplexity,
+or a LiveKit worker.
+
+```bash
+cd gateway
+npm ci
+cp .env.example .env
+# Set OPENAI_API_KEY and a unique GATEWAY_TOKENS=token:user pair.
+npm start
+```
+
+Use an OpenAI project with access to `gpt-live-1` and the configured
+`LIVE_BACKEND_MODEL` (default `gpt-5.6-luna`). Web search runs through Responses
+delegation when enabled in Watch settings. Claude memory and connected-app tools
+are separate legacy routes; they are not exposed in this voice session.
+
+The Watch sends `chime.session.start` with `voice`, `research`, and optional
+`history` entries (`role`: user/assistant, `content`: text). The gateway starts
+GPT-Live with a server-owned prompt, model, audio format, and tool configuration.
+After `session.started`, clients may send `session.input_audio.append` (base64,
+mono PCM16 little endian, 24 kHz), `session.input_audio.mute`,
+`session.input_audio.unmute`, or `session.close`. Other commands are rejected.
+
+The relay forwards audio deltas, both speakers’ transcript deltas and timestamps,
+input-state acknowledgments, voice usage snapshots, and final session usage.
+Backend events and resolved session configuration stay on the server. Audio queues
+are bounded; clients that fall behind must reconnect rather than accumulating
+stale audio. Connections have a startup deadline and a ping heartbeat. A disconnected
+Watch triggers `session.close`; the gateway waits up to 15 seconds for finalization.
+Usage snapshots are cumulative and must not be summed.
+
+For remote use, deploy behind HTTPS/WSS with WebSocket upgrade support. A gateway
+path prefix must be stripped by the reverse proxy. Keep the connection open until
+`session.closed`; muting alone does not end a billed session.
+
+Validation: `npm run typecheck` and `npm test`. Tests use a local mock upstream and
+never call a paid API. Protocol reference: [GPT-Live WebSockets](https://developers.openai.com/api/docs/guides/voice-websockets?api=live).
+
+## Legacy action agent (optional)
+
 
 Run VisionClaw's action agent in the cloud so users don't have to install and
 host a local agent on their own machine. The gateway speaks the exact protocol
