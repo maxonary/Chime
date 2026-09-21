@@ -49,7 +49,7 @@ private struct BubbleMark: View {
     } else {
       // Keep the bubble recognizable when the Watch face tints the complication.
       ZStack {
-        Circle().strokeBorder(.primary, lineWidth: 1.5)
+        Circle().strokeBorder(.primary, lineWidth: 0.75)
         Circle().trim(from: 0.55, to: 0.72)
           .stroke(.primary, style: StrokeStyle(lineWidth: 3, lineCap: .round))
           .padding(5)
