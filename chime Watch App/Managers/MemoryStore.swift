@@ -32,7 +32,6 @@ final class MemoryStore: ObservableObject {
     let id: String
     let digest: String
     let nextChunk: Int
-    let totalChunks: Int
     let turn: MemoryTurn
   }
 
@@ -44,17 +43,17 @@ final class MemoryStore: ObservableObject {
   private let conversations: ConversationStore
   private let path: URL
   private let compiler: Compiler
-  private let settingsProvider: () -> AppSettings
+  private let settingsProvider: @MainActor () -> AppSettings
   private var state = State()
   private var task: Task<Void, Never>?
   private var generation = UUID()
 
-  init(conversations: ConversationStore, directory: URL? = nil, settings: @escaping () -> AppSettings = { AppSettings.load() }, compiler: Compiler? = nil) {
+  init(conversations: ConversationStore, directory: URL? = nil, settings: (@MainActor () -> AppSettings)? = nil, compiler: Compiler? = nil) {
     self.conversations = conversations
     let folder = directory ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
     self.path = folder.appendingPathComponent("memory.json")
     self.compiler = compiler ?? Self.compile
-    self.settingsProvider = settings
+    self.settingsProvider = settings ?? { AppSettings.load() }
     try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     if let data = try? Data(contentsOf: path), let saved = try? JSONDecoder().decode(State.self, from: data) {
       state = saved
@@ -88,7 +87,7 @@ final class MemoryStore: ObservableObject {
       for index in completed..<max(completed, chunks.count) {
         let text = chunks[index]
         guard batch.count < 32, text.utf8.count <= remaining else { break }
-        batch.append(Work(id: message.id, digest: digest, nextChunk: index + 1, totalChunks: chunks.count,
+        batch.append(Work(id: message.id, digest: digest, nextChunk: index + 1,
                           turn: MemoryTurn(role: message.role.rawValue, content: text, timestamp: message.timestamp.ISO8601Format())))
         remaining -= text.utf8.count
       }

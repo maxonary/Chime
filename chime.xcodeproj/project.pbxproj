@@ -7,15 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3963681D2A7B422100CD562D /* chimeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3963681D2A7B422000CD562D /* chimeApp.swift */; };
-		3963681E2A7B422100CD562D /* AgentSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3963681E2A7B422000CD562D /* AgentSessionManager.swift */; };
-		3963681F2A7B422100CD562D /* ConversationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3963681F2A7B422000CD562D /* ConversationStore.swift */; };
-		3963682A2A7B422100CD562D /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3963682A2A7B422000CD562D /* AppSettings.swift */; };
-		3963682B2A7B422100CD562D /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3963682B2A7B422000CD562D /* Message.swift */; };
-		3963682C2A7B422100CD562D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3963682C2A7B422000CD562D /* ContentView.swift */; };
-		3963682D2A7B422100CD562D /* MessageListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3963682D2A7B422000CD562D /* MessageListView.swift */; };
-		3963682E2A7B422100CD562D /* VoiceControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3963682E2A7B422000CD562D /* VoiceControlView.swift */; };
-		3963682F2A7B422100CD562D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3963682F2A7B422000CD562D /* SettingsView.swift */; };
 		39636822301E349800CD562D /* chime Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 39636821301E349800CD562D /* chime Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -45,15 +36,6 @@
 
 /* Begin PBXFileReference section */
 		3963681B301E349800CD562D /* chime.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = chime.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		3963681D2A7B422000CD562D /* chimeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = chimeApp.swift; sourceTree = "<group>"; };
-		3963681E2A7B422000CD562D /* AgentSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Managers/AgentSessionManager.swift"; sourceTree = "<group>"; };
-		3963681F2A7B422000CD562D /* ConversationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Managers/ConversationStore.swift"; sourceTree = "<group>"; };
-		3963682A2A7B422000CD562D /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models/AppSettings.swift"; sourceTree = "<group>"; };
-		3963682B2A7B422000CD562D /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models/Message.swift"; sourceTree = "<group>"; };
-		3963682C2A7B422000CD562D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/ContentView.swift"; sourceTree = "<group>"; };
-		3963682D2A7B422000CD562D /* MessageListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/MessageListView.swift"; sourceTree = "<group>"; };
-		3963682E2A7B422000CD562D /* VoiceControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/VoiceControlView.swift"; sourceTree = "<group>"; };
-		3963682F2A7B422000CD562D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/SettingsView.swift"; sourceTree = "<group>"; };
 		39636821301E349800CD562D /* chime Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "chime Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
