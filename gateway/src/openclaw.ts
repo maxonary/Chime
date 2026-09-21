@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 export interface AgentBackend {
   userId: string;
-  run: (request: string, operationId: string, signal: AbortSignal) => Promise<string>;
+  run: (request: string, operationId: string, signal: AbortSignal, mode?: "research") => Promise<string>;
 }
 export interface OpenClawOptions {
   baseURL: string;
@@ -38,13 +38,17 @@ export function createOpenClawBackend(options: OpenClawOptions): AgentBackend {
   const endpoint = new URL(base.href.replace(/\/$/, "") + "/responses");
   const user = "chime-" + createHash("sha256").update(options.userId).digest("hex").slice(0, 32);
   let busy = false;
+  let researchers = 0;
   return {
     userId: options.userId,
-    async run(request, operationId, signal) {
+    async run(request, operationId, signal, mode) {
       if (!request.trim() || Buffer.byteLength(request) > 12000) throw new Error("Invalid agent request");
-      if (busy) throw new Error("The connected agent is still handling another request");
+      const research = mode === "research";
+      if (research && researchers >= 2) throw new Error("Two research tasks are already running");
+      if (!research && busy) throw new Error("The connected agent is still handling another request");
       signal.throwIfAborted();
-      busy = true;
+      if (research) researchers++; else busy = true;
+      const sessionUser = research ? user + "-research-" + createHash("sha256").update(operationId).digest("hex").slice(0, 24) : user;
       try {
         const headers: Record<string, string> = {
           Authorization: `Bearer ${options.token}`, "Content-Type": "application/json",
@@ -58,8 +62,8 @@ export function createOpenClawBackend(options: OpenClawOptions): AgentBackend {
           method: "POST", headers, redirect: "error",
           signal: AbortSignal.any([signal, AbortSignal.timeout(options.timeoutMs ?? 90000)]),
           body: JSON.stringify({
-            model: `openclaw/${agentId}`, user, stream: false,
-            instructions: "You are responding to your owner through the Chime voice app on iPhone or Apple Watch. Keep your own configured identity; Chime is the client app, not your name. Voice transcripts can contain errors: ask about ambiguous details before taking action. Keep replies brief and suitable for speech. Follow your existing tool permissions and confirmation requirements. Never auto-approve a pending confirmation. Report an action as completed only after verifying its result. The request ID is for tracing, not a guarantee of exactly-once execution.",
+            model: `openclaw/${agentId}`, user: sessionUser, stream: false,
+            instructions: (research ? "This is an independent background research task. Look up information only; do not modify data, send messages, make purchases, or approve actions. If a change is required, report it for the owner to authorize separately. Use the supplied context; do not assume another session history is available. " : "") + "You are responding to your owner through the Chime voice app on iPhone or Apple Watch. Keep your own configured identity; Chime is the client app, not your name. Voice transcripts can contain errors: ask about ambiguous details before taking action. Keep replies brief and suitable for speech. Follow your existing tool permissions and confirmation requirements. Never auto-approve a pending confirmation. Report an action as completed only after verifying its result. The request ID is for tracing, not a guarantee of exactly-once execution.",
             input: JSON.stringify({ request_id: operationId, request }), max_output_tokens: 1200,
           }),
         });
@@ -88,7 +92,7 @@ export function createOpenClawBackend(options: OpenClawOptions): AgentBackend {
           .map((part: any) => part.text).join("\n").trim();
         if (!text || Buffer.byteLength(text) > 16000) throw new Error("Invalid agent response text");
         return text;
-      } finally { busy = false; }
+      } finally { if (research) researchers--; else busy = false; }
     },
   };
 }
