@@ -18,6 +18,23 @@ enum LiveAudioCodec {
     return Data(bytes: samples, count: Int(output.frameLength) * 2)
   }
 
+  /// Speech envelope in 0...1, with a noise floor so quiet PCM stays still.
+  nonisolated static func level(_ bytes: Data) -> Double {
+    guard !bytes.isEmpty, bytes.count % 2 == 0 else { return 0 }
+    let count = bytes.count / 2
+    let energy = bytes.withUnsafeBytes { raw in
+      var sum = 0.0
+      for index in 0..<count {
+        let sample = Double(Int16(littleEndian: raw.loadUnaligned(fromByteOffset: index * 2, as: Int16.self))) / 32768
+        sum += sample * sample
+      }
+      return sum / Double(count)
+    }
+    guard energy > 0 else { return 0 }
+    let decibels = 10 * log10(energy)
+    return min(1, max(0, (decibels + 48) / 36))
+  }
+
   nonisolated static func decode(_ bytes: Data) -> AVAudioPCMBuffer? {
     guard !bytes.isEmpty, bytes.count % 2 == 0,
           let format = AVAudioFormat(standardFormatWithSampleRate: 24000, channels: 1),

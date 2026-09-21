@@ -1,32 +1,58 @@
-# Chime — live conversation on Apple Watch
+# Chime 🫧
 
-Chime is a native SwiftUI Watch app for talking with **GPT-Live**. Tap once to
-start a conversation, talk naturally, and tap again to end it. The gateway relays
-streaming audio to OpenAI while keeping the API key off the Watch.
+**A quiet bubble. A conversation when you need one.**
 
-## What’s included
+Chime puts a reflective soap bubble on your Apple Watch. Tap it to talk; tap again
+to end the conversation. It grows when the microphone is enabled and pulses with
+your voice and the agent’s reply. Useful details become compact memory for next time.
 
-- A full-screen photographic soap bubble with moving reflections and distinct listening/speaking motion.
-- A reminder that appears after 10 idle seconds; swipe horizontally to reach memory (left page) and preferences (right page), with no vertical scrolling on the bubble.
-- Streaming audio using `gpt-live-1`, with tap-to-start/end controls and independent user/assistant captions.
-- Automatic compact memory of useful facts and ongoing context, saved on the Watch.
-- Voice selection and optional web search through OpenAI Responses delegation.
-- Automatic connection provisioning during personal-device installation, microphone permission handling, and connection errors.
+## On your wrist
 
-The app ends its session when it enters the background. Mute leaves the session
-active; use End to disconnect. Audio is not saved to files by Chime. Memory is compiled after calls through OpenAI Responses and saved locally before older
-transcripts are pruned. The latest 12 turns remain for continuity; failed updates retain
-their source turns for retry. Memory and bounded recent text accompany the next session.
-This is app-managed memory, not ChatGPT account memory or cross-device cloud sync.
-The left page shows remembered facts and offers a confirmed “Forget everything” action.
+| Memory · swipe right | Bubble · home | Preferences · swipe left |
+| :---: | :---: | :---: |
+| <img src="docs/images/memory.png" width="200" alt="Memory page with automatic memory explanation and Forget everything button"> | <img src="docs/images/bubble-idle.png" width="200" alt="Small reflective soap bubble with the microphone off"> | <img src="docs/images/preferences.png" width="200" alt="Preferences page with voice selection and web search toggle"> |
 
-The Watch currently takes turns: microphone input is silenced during the agent’s
-reply and its short acoustic tail, so speaking over the reply does not interrupt it.
-This prevents speaker echo without the voice-processing audio unit, which failed
-at startup on the tested Series 8. The audio session activates asynchronously
-before opening the WebSocket, as required for networking on that Watch.
-The bubble respects Reduce Motion and pauses animation on a dimmed or inactive display, or while another page is visible.
-See [artwork provenance and prompt](watch/ARTWORK.md).
+Actual screenshots from the watchOS 26.5 simulator. The memory screenshot shows a
+fresh conversation store; your page fills with remembered details automatically.
+
+| Bubble state | What you see |
+| --- | --- |
+| Microphone off or muted | A small bubble |
+| Microphone enabled | A larger bubble |
+| Speech coming in or playing out | Pulses driven by the audio level |
+| Connecting or ending | A small bubble with a progress indicator |
+
+The center screen stays fixed: no vertical scrolling, no Crown scrolling or zoom,
+no branding, and no tap reminder. Swipe horizontally to open the two side pages.
+The Digital Crown remains available for their content and preferences. VoiceOver
+announces the conversation state; Reduce Motion disables pulsing and animated transitions.
+Animation also pauses on a dimmed or inactive display and when the bubble is offscreen.
+
+## Conversations that carry forward
+
+Memory is compiled automatically after calls and saved on the Watch before older
+transcripts are pruned. The latest 12 turns remain for continuity; failed updates keep
+their source text for retry. The next voice session receives compact memory and bounded
+recent context. The memory page shows useful facts and ongoing context, with a confirmed
+**Forget everything** action. Summaries can lose detail or make mistakes; they are not
+verbatim conversation history.
+
+Preferences offer voice selection and web search. Connection credentials are configured
+during installation, so there are no server addresses or tokens to type on the Watch.
+This is app-managed memory, separate from ChatGPT account memory or cross-device cloud sync.
+
+Chime ends a call when it enters the background. Muting keeps it connected; tap the
+bubble again to disconnect. Audio is streamed through the gateway and is not saved to
+files by Chime. OpenAI credentials remain on the server.
+
+The current Series 8 audio path takes turns: the microphone is silenced during the
+agent’s reply and a short acoustic tail to avoid echo. Spoken interruption is not yet
+supported. The tested device could not start the voice-processing audio unit, so Chime
+uses ordinary audio I/O with asynchronous audio-session activation.
+
+See [Watch setup and interaction checks](watch/SETUP.md),
+[bubble artwork and motion](watch/ARTWORK.md), and
+[screenshot provenance](docs/images/README.md).
 
 ## Run the gateway
 
@@ -111,7 +137,7 @@ Run the Watch checks on macOS from the repository root:
 ./scripts/check-watch.sh
 ```
 
-This runs audio conversion, transcript persistence, and memory lifecycle tests, checks compatibility
+This runs audio conversion and level-metering tests, transcript persistence, and memory lifecycle tests, checks compatibility
 with existing saved data, and compiles all Watch sources with strict concurrency
 checks. It uses the SDK in `/Applications/Xcode.app`; set `DEVELOPER_DIR` if Xcode
 is installed elsewhere. These checks do not package, sign, or launch the app.

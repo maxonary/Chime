@@ -6,6 +6,8 @@ struct SoapBubbleView: View {
   enum Activity { case idle, connecting, listening, speaking, muted }
 
   let activity: Activity
+  let microphoneActive: Bool
+  let audioLevel: Double
   var isVisible = true
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.isLuminanceReduced) private var isLuminanceReduced
@@ -27,7 +29,7 @@ struct SoapBubbleView: View {
     TimelineView(.animation(minimumInterval: activity == .speaking ? 1.0 / 30 : 1.0 / 15, paused: paused)) { timeline in
       let time = paused ? 0 : timeline.date.timeIntervalSince(origin)
       let ripple = sin(time * 3.2) * strength
-      let swell = sin(time * 1.8) * strength
+      let energy = paused ? 0 : min(1, max(0, audioLevel))
       GeometryReader { geometry in
         let side = min(geometry.size.width, geometry.size.height)
         ZStack {
@@ -55,8 +57,11 @@ struct SoapBubbleView: View {
               .blendMode(.screen)
           }
           .frame(width: side, height: side)
-          .scaleEffect(1.12)
-          .scaleEffect(x: 1 + swell * 0.045, y: 1 - ripple * 0.04)
+          .scaleEffect(x: 1 + ripple * energy * 0.025, y: 1 - ripple * energy * 0.02)
+          .scaleEffect(1 + energy * 0.085)
+          .animation(paused ? nil : .easeOut(duration: 0.12), value: energy)
+          .scaleEffect(microphoneActive ? 1.10 : 0.68)
+          .animation(paused ? nil : .easeInOut(duration: 0.35), value: microphoneActive)
           .rotation3DEffect(.degrees(ripple * 5), axis: (x: 1, y: 0.5, z: 0), perspective: 0.15)
           .rotationEffect(.degrees(sin(time * 0.7) * strength * 5))
           .offset(y: sin(time * 1.2) * strength * 3)

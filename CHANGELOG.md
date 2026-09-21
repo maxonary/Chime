@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased — Chime 🫧
+
+- Reflective soap bubble voice interface with microphone-driven size and audio-level pulses.
+- A fixed home page with no tap reminder or vertical/Crown scrolling; swipe to memory and preferences.
+- GPT-Live streaming audio through an authenticated gateway, with automatic device provisioning.
+- Durable compact conversation memory on the Watch, recent context, retry-safe updates, and a forget action.
+- Series 8 audio activation fix and turn-taking playback to avoid speaker echo.
+- Current Watch setup instructions and screenshots of the bubble and both menus.
+
+## Historical upstream SDK releases
+
+The entries below were inherited from the Wearables Device Access Toolkit repository.
+They describe that upstream SDK, not Chime app releases.
+
 ## [0.4.0] - 2026-02-03
 
 > **Note:** This version requires updated configuration values from Wearables Developer Center to work with release channels.

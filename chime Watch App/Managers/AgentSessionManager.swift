@@ -8,6 +8,8 @@ final class AgentSessionManager: ObservableObject {
   @Published private(set) var state: State = .idle
   @Published private(set) var isMuted = false
   @Published private(set) var isSpeaking = false
+  @Published private(set) var inputLevel = 0.0
+  @Published private(set) var outputLevel = 0.0
   @Published private(set) var currentResponse = ""
   @Published private(set) var userTranscript = ""
   @Published private(set) var startedAt: Date?
@@ -36,6 +38,9 @@ final class AgentSessionManager: ObservableObject {
   private var audioContinuation: AsyncStream<Data>.Continuation?
   private var generation = UUID()
   private var queuedFrames = 0
+  private struct OutputMeter { let start: Int64; let end: Int64; let level: Double }
+  private var outputMeters: [OutputMeter] = []
+  private var scheduledOutputFrames: Int64 = 0
   private var queuedSpeechBuffers = 0
   private var microphoneResumeAt = Date.distantPast
   private var transcriptGroups: [MessageRole: (id: String, text: String, start: Double, end: Double)] = [:]
@@ -184,6 +189,7 @@ final class AgentSessionManager: ObservableObject {
   func toggleMute() {
     guard state == .live, let socket else { return }
     isMuted.toggle()
+    inputLevel = 0
     let muted = isMuted
     let id = generation
     Task {
@@ -314,6 +320,8 @@ final class AgentSessionManager: ObservableObject {
           // (including its short acoustic tail) to avoid transcribing ourselves.
           let suppressEcho = (self.isSpeaking || Date() < self.microphoneResumeAt)
           let audio = self.isMuted || suppressEcho ? Data(count: bytes.count) : bytes
+          self.inputLevel = self.isMuted || suppressEcho ? 0 : LiveAudioCodec.level(bytes)
+          self.updateOutputLevel()
           try await self.send(["type": "session.input_audio.append", "audio": audio.base64EncodedString()], on: socket)
         } catch {
           if self.generation == id { self.fail("Audio connection lost. Tap to reconnect.") }
@@ -334,6 +342,16 @@ final class AgentSessionManager: ObservableObject {
       throw NSError(domain: "Chime", code: 2, userInfo: [NSLocalizedDescriptionKey: "Audio playback fell behind. Please reconnect."])
     }
     let audible = UnsafeBufferPointer(start: buffer.floatChannelData![0], count: count).contains { abs($0) > 0.015 }
+    // Meter small slices against the player's sample clock, so animation follows
+    // audible playback rather than the arrival time of network packets.
+    let renderFrame = player.lastRenderTime.flatMap { player.playerTime(forNodeTime: $0) }?.sampleTime ?? 0
+    scheduledOutputFrames = max(scheduledOutputFrames, renderFrame)
+    for offset in stride(from: 0, to: bytes.count, by: 1920) {
+      let slice = bytes.subdata(in: offset..<min(offset + 1920, bytes.count))
+      let start = scheduledOutputFrames + Int64(offset / 2)
+      outputMeters.append(OutputMeter(start: start, end: start + Int64(slice.count / 2), level: LiveAudioCodec.level(slice)))
+    }
+    scheduledOutputFrames += Int64(count)
     queuedFrames += count
     if audible { queuedSpeechBuffers += 1 }
     if audible {
@@ -351,6 +369,13 @@ final class AgentSessionManager: ObservableObject {
     if !player.isPlaying { player.play() }
   }
 
+  private func updateOutputLevel() {
+    guard let player, let render = player.lastRenderTime,
+          let time = player.playerTime(forNodeTime: render) else { outputLevel = 0; return }
+    outputMeters.removeAll { $0.end <= time.sampleTime }
+    outputLevel = outputMeters.first(where: { $0.start <= time.sampleTime && time.sampleTime < $0.end })?.level ?? 0
+  }
+
   private func stopAudio(deactivateSession: Bool = true) {
     if hasTap { engine?.inputNode.removeTap(onBus: 0); hasTap = false }
     audioContinuation?.finish()
@@ -362,6 +387,10 @@ final class AgentSessionManager: ObservableObject {
     player = nil
     engine = nil
     queuedFrames = 0
+    outputMeters = []
+    scheduledOutputFrames = 0
+    inputLevel = 0
+    outputLevel = 0
     queuedSpeechBuffers = 0
     isSpeaking = false
     if deactivateSession {

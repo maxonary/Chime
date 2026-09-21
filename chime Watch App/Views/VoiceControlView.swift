@@ -3,10 +3,7 @@ import SwiftUI
 struct VoiceControlView: View {
   var isVisible = true
   @EnvironmentObject var sessionManager: AgentSessionManager
-  @Environment(\.scenePhase) private var scenePhase
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @State private var showHint = false
-  @State private var hintGeneration = UUID()
+  @FocusState private var ownsCrown: Bool
 
   private var activity: SoapBubbleView.Activity {
     switch sessionManager.state {
@@ -19,53 +16,35 @@ struct VoiceControlView: View {
   }
 
   var body: some View {
-    ZStack(alignment: .bottom) {
-      Button {
-        resetHint()
-        if sessionManager.isListening { sessionManager.stopListening() }
-        else { sessionManager.startListening() }
-      } label: {
-        // The hit target is stable and independent of the moving artwork.
-        Rectangle().fill(.black)
-          .overlay {
-            SoapBubbleView(activity: activity, isVisible: isVisible)
-              .padding(4)
-              .padding(.bottom, 18)
-              .allowsHitTesting(false)
-          }
-          .contentShape(Rectangle())
-      }
-      .buttonStyle(.plain)
-      .disabled(sessionManager.state == .ending)
-      .accessibilityElement(children: .ignore)
-      .accessibilityLabel(sessionManager.isListening ? "End conversation" : "Start conversation")
-      .accessibilityValue(sessionManager.statusText)
-      .accessibilityHint("Double tap to talk naturally with the voice assistant")
-
-      // The reminder overlays the stage without changing its size or hit target.
-      Text("Tap the bubble")
-        .font(.caption2)
-        .foregroundStyle(.secondary)
-        .opacity(showHint && sessionManager.state == .idle ? 1 : 0)
-        .accessibilityHidden(!showHint || sessionManager.state != .idle)
-        .frame(height: 18)
-        .padding(.bottom, 10)
-        .allowsHitTesting(false)
+    Button {
+      if sessionManager.isListening { sessionManager.stopListening() }
+      else { sessionManager.startListening() }
+    } label: {
+      // The hit target stays fixed even when the bubble shrinks or pulses.
+      Rectangle().fill(.black)
+        .overlay {
+          SoapBubbleView(activity: activity,
+                         microphoneActive: sessionManager.isConnected && !sessionManager.isMuted,
+                         audioLevel: max(sessionManager.inputLevel, sessionManager.outputLevel),
+                         isVisible: isVisible)
+            .padding(4)
+            .allowsHitTesting(false)
+        }
+        .contentShape(Rectangle())
     }
-    .task(id: hintGeneration) {
-      guard isVisible, scenePhase == .active, sessionManager.state == .idle else { return }
-      do { try await Task.sleep(for: .seconds(10)) }
-      catch { return }
-      guard !Task.isCancelled, isVisible, scenePhase == .active, sessionManager.state == .idle else { return }
-      withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.5)) { showHint = true }
-    }
-    .onChange(of: isVisible) { _, _ in resetHint() }
-    .onChange(of: scenePhase) { _, _ in resetHint() }
-    .onChange(of: sessionManager.state) { _, _ in resetHint() }
-  }
-
-  private func resetHint() {
-    showHint = false
-    hintGeneration = UUID()
+    .buttonStyle(.plain)
+    .disabled(sessionManager.state == .ending)
+    // Consume Crown input on the center page without scrolling, zooming, or
+    // changing pages. The side pages retain their normal Crown behavior.
+    .focusable(isVisible)
+    .focused($ownsCrown)
+    .focusEffectDisabled()
+    .digitalCrownRotation(.constant(0), from: 0, through: 1, isContinuous: true, isHapticFeedbackEnabled: false)
+    .onAppear { ownsCrown = isVisible }
+    .onChange(of: isVisible) { _, visible in ownsCrown = visible }
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(sessionManager.isListening ? "End conversation" : "Start conversation")
+    .accessibilityValue(sessionManager.statusText)
+    .accessibilityHint("Double tap to talk naturally with the voice assistant")
   }
 }

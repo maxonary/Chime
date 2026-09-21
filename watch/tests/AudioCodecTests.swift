@@ -16,6 +16,21 @@ struct AudioCodecTests {
     assert(LiveAudioCodec.decode(Data([0])) == nil)
     assert(LiveAudioCodec.decode(Data()) == nil)
 
+    // Meter silence/noise separately from speech and tolerate malformed frames.
+    assert(LiveAudioCodec.level(Data(repeating: 0, count: 1920)) == 0)
+    assert(LiveAudioCodec.level(Data([0])) == 0)
+    assert(LiveAudioCodec.level(Data()) == 0)
+    func constantPCM(_ sample: Int16) -> Data {
+      let value = sample.littleEndian
+      return withUnsafeBytes(of: value) { Data($0) }
+    }
+    assert(LiveAudioCodec.level(constantPCM(16)) == 0, "Noise below the floor should not pulse")
+    let soft = LiveAudioCodec.level(constantPCM(600))
+    let loud = LiveAudioCodec.level(constantPCM(6000))
+    assert(soft > 0 && loud > soft && loud <= 1, "Speech energy must drive pulse strength")
+    assert(LiveAudioCodec.level(constantPCM(-6000)) == loud, "Meter both PCM polarities equally")
+    assert(LiveAudioCodec.level(constantPCM(Int16.min)) == 1, "Full-scale samples must remain bounded")
+
     // Simulate a 48 kHz microphone producing a continuous 1 kHz sine wave.
     // The same converter must retain its resampling state between tap callbacks.
     let source = AVAudioFormat(standardFormatWithSampleRate: 48000, channels: 1)!
@@ -43,6 +58,6 @@ struct AudioCodecTests {
     }
     let frequency = Double(crossings) * 24000 / Double(samples.count)
     assert(abs(frequency - 1000) < 5, "Resampling must preserve pitch")
-    print("PASS: PCM byte order, playback amplitude, invalid frames, continuous 48→24 kHz resampling, and pitch")
+    print("PASS: PCM byte order, playback amplitude, invalid frames, continuous 48→24 kHz resampling, pitch, and speech level metering")
   }
 }

@@ -1,6 +1,10 @@
 # Soap bubble artwork
 
-`chime Watch App/Assets.xcassets/SoapBubble.imageset/soap-bubble.png` was generated with the built-in image-generation tool. SwiftUI adds deformation, moving grazing light, and distinct listening/speaking motion; this is animated photographic artwork rather than a realtime ray-traced simulation.
+`chime Watch App/Assets.xcassets/SoapBubble.imageset/soap-bubble.png` was generated with the built-in image-generation tool. SwiftUI adds deformation and moving grazing light. This is animated photographic artwork, not a realtime ray-traced simulation.
+
+The bubble is small while idle or muted and expands when the microphone is enabled. Its pulse follows the RMS energy of PCM audio, with a noise floor to keep quiet input still. Output metering follows the player’s sample clock rather than incoming network packets. The fixed tap target does not shrink with the artwork. Reduce Motion removes pulses and animated size changes; dimmed, inactive, and offscreen states pause motion.
+
+The center page has no text, scroll container, or Crown-driven movement. Horizontal swipes reveal memory on the left and preferences on the right. The system clock remains visible.
 
 The full generation prompt:
 

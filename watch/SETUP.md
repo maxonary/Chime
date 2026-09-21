@@ -1,41 +1,54 @@
-# Setting Up Chime watchOS Project in Xcode
+# Chime on Apple Watch 🫧
 
-Since Swift Package Manager creates executables (not .app bundles), we need a proper Xcode project.
+Use the existing `chime.xcodeproj`; the active sources are in `chime Watch App/`.
+The project targets watchOS 26.5 or later. Live voice has been confirmed on Apple Watch Series 8.
 
-## Quick Setup
+## Install on your Watch
 
-1. **Open Xcode**
-2. **File** → **New** → **Project**
-3. Select **watchOS** → **App**
-4. Configure:
-   - **Product Name**: `chime`
-   - **Team**: Your Apple team
-   - **Organization**: Your name/company
-   - Uncheck "Include Tests"
-5. **Create**
+1. Follow the [gateway setup](../README.md#run-the-gateway) and deploy it at an HTTPS URL.
+2. Open the project in Xcode, select **chime Watch App**, and configure your signing team.
+3. Connect the paired iPhone and make the Watch available to Xcode; obtain its ID with `xcrun devicectl list devices`.
+4. Configure the Watch token in the ignored `gateway/.env`, or set `WATCH_TOKEN` locally.
+5. From the repository root:
 
-## Then Replace the Files
+   ```bash
+   GATEWAY_URL=https://your-gateway.example.com ./scripts/install-watch.sh YOUR_WATCH_ID
+   ```
 
-Once the project is created in Xcode:
+   Add `--fresh` only for a first installation with no existing preferences file. The script
+   builds, installs, merges credentials into device preferences, and launches Chime. Existing
+   voice choices and conversation memory are preserved. Credentials are not bundled in the app.
+6. Tap the small bubble and allow microphone access. It grows once the voice connection is ready.
 
-1. Delete these default files in Xcode:
-   - `ContentView.swift`
-   - `chimeApp.swift` (the default one)
+This installer is for a personal development device. Public distribution would need account
+enrollment. Never put an OpenAI key in the Watch bundle or commit a gateway token.
 
-2. Copy our Swift files from `Haptic/` directory:
-   - `HapticApp.swift` → Root (rename to `chimeApp.swift`)
-   - `Models/` → Copy folder
-   - `Managers/` → Copy folder
-   - `Views/` → Copy folder
+## Three pages, one conversation
 
-3. Make sure all files are added to the **chime** target
+- **Center:** tap the bubble to start/end a call. It is small with the mic off, large with the mic enabled,
+  and pulses with audio input/output. Vertical swipes and Crown turns do not move or resize it.
+- **Left page:** swipe right from the bubble to see compiled memory. Memory updates automatically.
+  Forgetting everything requires confirmation and is disabled during a call.
+- **Right page:** swipe left from the bubble for voice, web search, and microphone mute while connected.
+  Voice and search changes apply to the next conversation.
 
-## Build & Run
+The system time remains at the top. There is no branding, tap hint, or transcript tab on the home page.
+Screenshots are in the [main README](../README.md#on-your-wrist).
 
-- Select **chime** scheme (top left)
-- Select **Apple Watch** device/simulator
-- Press **Cmd+R** to build and run
+## Verify a change
 
----
+Run `./scripts/check-watch.sh` for audio conversion, level metering, transcript persistence,
+memory lifecycle, and strict concurrency compilation. Also build the Watch scheme in Xcode.
 
-**Note**: The files are already here in the `Haptic/` folder. Just create the empty Xcode project and drag our files in.
+On a real Watch, check:
+
+1. Idle bubble stays small, even after ten seconds; no reminder appears.
+2. Vertical swipes and Crown rotation leave the center fixed; horizontal swipes reach both side pages.
+3. Tap to connect: the bubble grows; speech pulses it, while silence settles it.
+4. Agent playback pulses in time with sound. Input is suppressed during playback to prevent echo.
+5. Mute shrinks the bubble, unmute grows it, and ending the call returns to the small state.
+6. End a conversation, then reconnect and ask about a remembered detail; check memory after a relaunch.
+7. Check Reduce Motion, dimmed display, permission denial, and a failed gateway connection.
+
+A simulator can verify layout and navigation; microphone, speaker, and networking behavior still
+need hardware checks. The current audio path supports turn-taking rather than spoken interruption.
