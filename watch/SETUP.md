@@ -35,10 +35,31 @@ enrollment. Never put an OpenAI key in the Watch bundle or commit a gateway toke
 The system time remains at the top. There is no branding, tap hint, or transcript tab on the home page.
 Screenshots are in the [main README](../README.md#on-your-wrist).
 
+## Quick access from your wrist
+
+The app includes a WidgetKit extension and an **Open Chime** App Shortcut.
+
+- **Smart Stack:** from the Watch face, turn the Digital Crown upward or swipe up.
+  Edit the stack (touch and hold, or use **Edit**), tap **+**, select **Chime**, and
+  add its bubble widget. Pin it if you want it to stay near the top.
+- **Watch face:** touch and hold the face, choose **Edit**, swipe to **Complications**,
+  and assign **Chime** to a supported slot. Circular, rectangular, inline, and corner
+  layouts are included; available slots depend on the face.
+- **Siri / Shortcuts:** say **“Open Chime”** on the Watch. The app also exposes an
+  **Open Chime** action to Shortcuts on the Watch. This Watch-only target does not
+  add an iPhone Home Screen widget or an iPhone app action.
+
+Each entry opens the center bubble, even if the app was last showing memory or
+preferences. Tap the bubble to start the microphone. These are static launchers:
+they do not stream audio, display conversations, or contact the gateway themselves.
+A tinted face uses a simple bubble outline; the full-color widget uses the app's
+reflective bubble artwork. If Chime is absent from the picker just after installing,
+unlock the Watch and open Chime once before returning to the picker.
+
 ## Verify a change
 
 Run `./scripts/check-watch.sh` for audio conversion, level metering, transcript persistence,
-memory lifecycle, and strict concurrency compilation. Also build the Watch scheme in Xcode.
+memory lifecycle, and strict concurrency compilation. Also build the Watch scheme in Xcode; this embeds and compiles **Chime Widgets**.
 
 On a real Watch, check:
 
@@ -48,7 +69,10 @@ On a real Watch, check:
 4. Agent playback pulses in time with sound. Input is suppressed during playback to prevent echo.
 5. Mute shrinks the bubble, unmute grows it, and ending the call returns to the small state.
 6. End a conversation, then reconnect and ask about a remembered detail; check memory after a relaunch.
-7. Check Reduce Motion, dimmed display, permission denial, and a failed gateway connection.
+7. Add the Smart Stack widget and a face complication; tap each from a cold launch and
+   after leaving the app on a side page. Confirm the bubble opens with the mic off.
+8. Run **Open Chime** from Shortcuts or Siri and confirm it returns to the bubble.
+9. Check Reduce Motion, dimmed display, permission denial, and a failed gateway connection.
 
 A simulator can verify layout and navigation; microphone, speaker, and networking behavior still
 need hardware checks. The current audio path supports turn-taking rather than spoken interruption.

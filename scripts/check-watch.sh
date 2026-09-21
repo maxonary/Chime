@@ -13,7 +13,7 @@ if [[ ! -x "$swift_compiler" || ! -d "$watch_sdk" ]]; then
 fi
 
 check_dir="$(mktemp -d "${TMPDIR:-/tmp}/chime-watch-checks.XXXXXX")"
-trap 'rm -f "$check_dir/audio-tests" "$check_dir/store-tests" "$check_dir/memory-tests" "$check_dir/watch.o"; rmdir "$check_dir"' EXIT
+trap 'rm -f "$check_dir/audio-tests" "$check_dir/store-tests" "$check_dir/memory-tests" "$check_dir/watch.o" "$check_dir/widget.o"; rmdir "$check_dir"' EXIT
 cd "$repo_root"
 
 "$swift_compiler" -sdk "$mac_sdk" \
@@ -48,3 +48,10 @@ cd "$repo_root"
   "chime Watch App/Views/"*.swift \
   -o "$check_dir/watch.o"
 echo "PASS: Watch source compilation with strict concurrency checks"
+
+
+"$swift_compiler" -emit-object -whole-module-optimization \
+  -target arm64-apple-watchos26.5-simulator -sdk "$watch_sdk" \
+  -module-name ChimeWidgets -parse-as-library -swift-version 5 -strict-concurrency=complete \
+  "Chime Widgets/ChimeWidget.swift" -o "$check_dir/widget.o"
+echo "PASS: Widget extension source compilation"

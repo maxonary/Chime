@@ -138,13 +138,22 @@ Run the Watch checks on macOS from the repository root:
 ```
 
 This runs audio conversion and level-metering tests, transcript persistence, and memory lifecycle tests, checks compatibility
-with existing saved data, and compiles all Watch sources with strict concurrency
+with existing saved data, and compiles the app and widget extension sources with strict concurrency
 checks. It uses the SDK in `/Applications/Xcode.app`; set `DEVELOPER_DIR` if Xcode
 is installed elsewhere. These checks do not package, sign, or launch the app.
 
 Gateway tests use a mock GPT-Live upstream and cover authentication, protocol
 validation, audio and caption relay, and disconnect cleanup. Build the Watch target
 in Xcode and test a live conversation with configured credentials on hardware.
+
+## Open Chime quickly
+
+Add **Chime** to your Watch face's complications or pin its bubble widget in the
+Smart Stack. You can also say **“Open Chime”** to Siri on the Watch or use its
+Shortcuts action. Each opens the bubble; tap it to begin listening.
+See [quick-access setup](watch/SETUP.md#quick-access-from-your-wrist) for instructions.
+
+<img src="docs/images/smart-stack.png" width="200" alt="Chime soap bubble launcher in the Apple Watch Smart Stack">
 
 ## Connect an OpenClaw agent
 

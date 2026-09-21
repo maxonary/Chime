@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased — Chime 🫧
 
+- Bubble launchers for Watch face complications and Smart Stack, plus an Open Chime Siri/Shortcuts action.
+
 - Optional OpenClaw voice delegation with server-only credentials, per-user access, and Cloudflare service authentication.
 
 - Reflective soap bubble voice interface with microphone-driven size and audio-level pulses.

@@ -3,13 +3,13 @@ import SwiftUI
 struct ContentView: View {
   @EnvironmentObject var sessionManager: AgentSessionManager
   @Environment(\.scenePhase) private var scenePhase
-  @State private var page = 1
+  @ObservedObject private var navigation = ChimeNavigation.shared
 
   var body: some View {
-    TabView(selection: $page) {
+    TabView(selection: $navigation.page) {
       MemoryView(store: sessionManager.memoryStore)
         .tag(0)
-      VoiceControlView(isVisible: page == 1)
+      VoiceControlView(isVisible: navigation.page == 1)
         // Center against the entire display, including the system clock inset.
         .ignoresSafeArea(.container)
         .tag(1)
@@ -31,6 +31,7 @@ struct ContentView: View {
       if phase == .background { sessionManager.stopListening() }
       if phase == .active { sessionManager.memoryStore.refresh() }
     }
+    .onOpenURL { navigation.open($0) }
     .task { sessionManager.memoryStore.refresh() }
   }
 }
