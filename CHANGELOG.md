@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased — Chime 🫧
 
+- Optional OpenClaw voice delegation with server-only credentials, per-user access, and Cloudflare service authentication.
+
 - Reflective soap bubble voice interface with microphone-driven size and audio-level pulses.
 - A fixed home page with no tap reminder or vertical/Crown scrolling; swipe to memory and preferences.
 - GPT-Live streaming audio through an authenticated gateway, with automatic device provisioning.

@@ -62,6 +62,62 @@ This app-managed summary is separate from Responses conversation IDs and encrypt
 See OpenAI's [conversation state](https://developers.openai.com/api/docs/guides/conversation-state)
 and [structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs) documentation.
 
+## Connected OpenClaw agent (optional)
+
+Keep GPT-Live as the Watch's voice and delegate agent requests through the gateway:
+
+`Watch → Chime gateway → GPT-Live / Responses → OpenClaw /v1/responses`
+
+Enable the API in AlphaClaw's General page, or enable the Responses HTTP endpoint
+in OpenClaw. Configure these **server-side** variables together:
+
+```dotenv
+OPENCLAW_BASE_URL=https://your-agent.example.com/v1
+OPENCLAW_GATEWAY_TOKEN=<OpenClaw gateway operator token>
+OPENCLAW_USER_ID=<user ID from the matching GATEWAY_TOKENS entry>
+OPENCLAW_AGENT_ID=main
+```
+
+For Cloudflare Access, create a dedicated service token and authorize it with a
+Service Auth policy on the Access application protecting the API. Set both
+`OPENCLAW_CF_ACCESS_CLIENT_ID` and `OPENCLAW_CF_ACCESS_CLIENT_SECRET` in the hosting
+provider's secret environment settings. Browser login cookies do not authorize
+server requests. Keep the existing interactive dashboard login policy intact.
+The gateway refuses redirects, so an Access login page fails rather than silently
+becoming an agent reply.
+
+Only the configured authenticated Watch user receives the `ask_openclaw` tool.
+Other users retain ordinary voice service. Model arguments cannot choose a host,
+agent, credential, or user identity. The operator token stays off the Watch, and
+OpenClaw retains its configured permissions and confirmation requirements. This
+credential grants substantial agent access; use a dedicated agent with suitable
+tool permissions when sharing a gateway.
+
+The connector sends complete requests, relevant context, and corrections to the
+agent. A stable hashed user identifier keeps a separate Chime agent session across
+voice calls. OpenClaw owns that session's history and its own workspace memory;
+this does not automatically import other chat threads or synchronize the Watch's
+compiled summary. **Forget everything on the Watch does not delete OpenClaw's
+history or memory.** Manage those through OpenClaw.
+
+Calls wait for the Responses turn to complete before executing; duplicate call IDs
+are ignored. Requests are bounded, serialized per connector, time out after 90
+seconds, and are cancelled when the Watch disconnects. Cancellation cannot undo
+an action already performed. Failed or uncertain results are reported as
+unconfirmed and are never automatically retried. The request ID is a trace ID,
+not an exactly-once guarantee. Long-running jobs and remote approval dialogs must
+be checked in OpenClaw; this connector does not auto-approve them.
+
+Deployment check: first verify authenticated `GET /v1/models` from outside the
+browser, then ask the Watch a harmless agent question and confirm the resulting
+Chime session in OpenClaw. Do not report the connection as active based only on a
+successful build or dashboard login.
+
+References: [AlphaClaw API proxy](https://github.com/chrysb/alphaclaw#openai-compatible-v1-proxy),
+[OpenClaw Responses API](https://docs.openclaw.ai/gateway/openresponses-http-api),
+[GPT-Live delegation](https://developers.openai.com/api/docs/guides/live-delegation),
+and [Cloudflare service tokens](https://developers.cloudflare.com/cloudflare-one/access-controls/service-credentials/service-tokens/).
+
 ## Legacy action agent (optional)
 
 

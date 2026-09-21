@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 import { WebSocketServer, type WebSocket } from "ws";
 import { config } from "./config.js";
+import { openClawFromEnvironment } from "./openclaw.js";
 import { attachLiveServer } from "./live.js";
 import { registerMemoryRoutes } from "./memory.js";
 import { initStore } from "./store.js";
@@ -303,6 +304,7 @@ app.post("/context", async (req, res) => {
 
 const httpServer = createServer(app);
 attachLiveServer(httpServer, {
+  agent: openClawFromEnvironment(),
   tokens: config.tokens,
   apiKey: process.env.OPENAI_API_KEY,
   backendModel: process.env.LIVE_BACKEND_MODEL ?? "gpt-5.6-luna",

@@ -4,6 +4,7 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { test } from "node:test";
 import { WebSocket, WebSocketServer } from "ws";
+import type { AgentBackend } from "../src/openclaw.js";
 import { attachLiveServer, sessionConfiguration } from "../src/live.js";
 
 function events(socket: WebSocket) {
@@ -17,7 +18,7 @@ function events(socket: WebSocket) {
   return async () => queued.length ? queued.shift() : new Promise<any>((resolve) => waiting.push(resolve));
 }
 
-async function fixture(apiKey: string | undefined = "test-key", timeout = 500) {
+async function fixture(apiKey: string | undefined = "test-key", timeout = 500, agent?: AgentBackend) {
   const upstream = new WebSocketServer({ port: 0 });
   await once(upstream, "listening");
   let connections = 0;
@@ -34,7 +35,7 @@ async function fixture(apiKey: string | undefined = "test-key", timeout = 500) {
   const server = createServer();
   const relay = attachLiveServer(server, {
     tokens: new Map([["watch-token", "alice"]]), apiKey,
-    backendModel: "test-backend",
+    backendModel: "test-backend", agent,
     upstreamURL: `ws://127.0.0.1:${(upstream.address() as AddressInfo).port}`,
     startupTimeoutMs: timeout, closeTimeoutMs: 100,
   });
@@ -216,5 +217,33 @@ test("invalid upstream JSON values close the relay without crashing", async () =
     const { next, remote } = await start(f);
     remote.send("null");
     assert.match((await next()).error.message, /Invalid response/);
+  } finally { await f.close(); }
+});
+
+for (const owner of ["alice", "bob"]) test(`OpenClaw routing is restricted to authenticated owner ${owner}`, async () => {
+  const requests: string[] = [];
+  const f = await fixture("test-key", 500, { userId: owner, run: async request => { requests.push(request); return "Project is ready"; } });
+  try {
+    const { next, remote, nextRemote, initial } = await start(f);
+    const tools = initial.session.delegation.responses.tools;
+    assert.equal(tools.some((tool: any) => tool.name === "ask_openclaw"), owner === "alice");
+    remote.send(JSON.stringify({ type: "session.started" })); await next();
+    for (const event of [
+      { type: "response.created", response: { id: "response" } },
+      { type: "response.output_item.done", item: { type: "function_call", call_id: "call", name: "ask_openclaw", arguments: JSON.stringify({ request: "Check project" }) } },
+      { type: "response.completed", response: { id: "response", output: [] } },
+    ]) remote.send(JSON.stringify({ type: "response.event", delegation_id: "delegation", event }));
+    if (owner === "alice") {
+      const output = await nextRemote();
+      assert.equal(output.type, "response.item.create");
+      assert.equal(JSON.parse(output.item.output).result, "Project is ready");
+      assert.equal((await nextRemote()).type, "response.create");
+      assert.deepEqual(requests, ["Check project"]);
+    } else {
+      // A following caption proves all preceding upstream frames have been processed.
+      remote.send(JSON.stringify({ type: "session.output_transcript.delta", delta: "hello" }));
+      assert.equal((await next()).delta, "hello");
+      assert.deepEqual(requests, []);
+    }
   } finally { await f.close(); }
 });

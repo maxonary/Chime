@@ -146,6 +146,14 @@ Gateway tests use a mock GPT-Live upstream and cover authentication, protocol
 validation, audio and caption relay, and disconnect cleanup. Build the Watch target
 in Xcode and test a live conversation with configured credentials on hardware.
 
+## Connect an OpenClaw agent
+
+Chime can keep its live voice while delegating workspace questions and authorized
+actions to your hosted OpenClaw agent. Configure the connection on the gateway;
+no tokens or connection forms are needed on the Watch. See the
+[OpenClaw setup guide](gateway/README.md#connected-openclaw-agent-optional).
+OpenClaw memory remains separate from the Watch's compiled conversation memory.
+
 ## Troubleshooting
 
 - **Cannot connect:** check gateway reachability, the Watch token, WSS proxy support,
