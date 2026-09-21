@@ -75,7 +75,7 @@ final class AgentSessionManager: ObservableObject {
       guard generation == id, state == .connecting, !Task.isCancelled else { return }
       guard allowed else { fail("Allow microphone access in Watch Settings to talk to Chime."); return }
       do {
-        try prepareAudio()
+        guard try await prepareAudio(generation: id) else { return }
         var components = URLComponents(url: settings.gatewayURL, resolvingAgainstBaseURL: false)!
         components.scheme = settings.gatewayURL.scheme == "https" ? "wss" : "ws"
         components.path = components.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
@@ -123,7 +123,9 @@ final class AgentSessionManager: ObservableObject {
     guard state != .idle, state != .ending else { return }
     let wasLive = state == .live
     state = .ending
-    stopAudio()
+    // watchOS grants WebSocket access through the active audio session. Keep it
+    // active until session.closed arrives so final usage and captions can drain.
+    stopAudio(deactivateSession: false)
     timeoutTask?.cancel()
     guard wasLive, let socket else { cleanup(); return }
     let id = generation
@@ -211,10 +213,22 @@ final class AgentSessionManager: ObservableObject {
       transcriptStartMs: group!.start, transcriptEndMs: group!.end), to: conversationId)
   }
 
-  private func prepareAudio() throws {
+  private func prepareAudio(generation id: UUID) async throws -> Bool {
     let session = AVAudioSession.sharedInstance()
     try session.setCategory(.playAndRecord, mode: .voiceChat)
-    try session.setActive(true)
+    // Synchronous setActive succeeds on watchOS without enabling low-level
+    // networking. Await watchOS audio activation before opening the WebSocket.
+    let activated = try await session.activate(options: [])
+    guard generation == id, state == .connecting, !Task.isCancelled else {
+      // Activation may finish after Stop. Don't deactivate a newer session.
+      if state == .idle {
+        try? session.setActive(false, options: .notifyOthersOnDeactivation)
+      }
+      return false
+    }
+    guard activated else {
+      throw NSError(domain: "Chime", code: 3, userInfo: [NSLocalizedDescriptionKey: "The Watch could not activate audio. Please try again."])
+    }
     let engine = AVAudioEngine()
     try engine.inputNode.setVoiceProcessingEnabled(true)
     let player = AVAudioPlayerNode()
@@ -223,6 +237,7 @@ final class AgentSessionManager: ObservableObject {
     engine.connect(player, to: engine.mainMixerNode, format: AVAudioFormat(standardFormatWithSampleRate: 24000, channels: 1)!)
     self.engine = engine
     self.player = player
+    return true
   }
 
   private func startAudio(generation id: UUID) throws {
@@ -288,7 +303,7 @@ final class AgentSessionManager: ObservableObject {
     if !player.isPlaying { player.play() }
   }
 
-  private func stopAudio() {
+  private func stopAudio(deactivateSession: Bool = true) {
     if hasTap { engine?.inputNode.removeTap(onBus: 0); hasTap = false }
     audioContinuation?.finish()
     audioContinuation = nil
@@ -301,7 +316,9 @@ final class AgentSessionManager: ObservableObject {
     queuedFrames = 0
     queuedSpeechBuffers = 0
     isSpeaking = false
-    try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    if deactivateSession {
+      try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
     conversationStore.flush()
   }
 

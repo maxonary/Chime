@@ -9,7 +9,7 @@ struct ContentView: View {
   var body: some View {
     NavigationStack {
       ScrollView {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
           HStack {
             Text("CHIME")
               .font(.system(size: 11, weight: .bold, design: .rounded))
@@ -49,7 +49,7 @@ struct ContentView: View {
             .disabled(sessionManager.isListening)
             .accessibilityLabel("Settings")
           }
-          .buttonStyle(.bordered)
+          .buttonStyle(ConversationControlStyle())
           .font(.caption)
           if !sessionManager.currentResponse.isEmpty {
             Text(sessionManager.currentResponse)
@@ -85,6 +85,16 @@ struct ContentView: View {
       }
     }
     .tint(.mint)
+  }
+}
+
+private struct ConversationControlStyle: ButtonStyle {
+  func makeBody(configuration: Configuration) -> some View {
+    configuration.label
+      .frame(maxWidth: .infinity)
+      .frame(height: 36)
+      .background(Color.white.opacity(configuration.isPressed ? 0.16 : 0.08), in: Capsule())
+      .contentShape(Capsule())
   }
 }
 
