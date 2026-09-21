@@ -10,7 +10,8 @@ struct ContentView: View {
       MemoryView(store: sessionManager.memoryStore)
         .tag(0)
       VoiceControlView(isVisible: page == 1)
-        .ignoresSafeArea(.container, edges: .bottom)
+        // Center against the entire display, including the system clock inset.
+        .ignoresSafeArea(.container)
         .tag(1)
       SettingsView()
         .tag(2)

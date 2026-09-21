@@ -64,7 +64,6 @@ struct SoapBubbleView: View {
           .animation(paused ? nil : .easeInOut(duration: 0.35), value: microphoneActive)
           .rotation3DEffect(.degrees(ripple * 5), axis: (x: 1, y: 0.5, z: 0), perspective: 0.15)
           .rotationEffect(.degrees(sin(time * 0.7) * strength * 5))
-          .offset(y: sin(time * 1.2) * strength * 3)
           .saturation(activity == .muted ? 0.3 : 1)
           .brightness(isLuminanceReduced ? -0.15 : 0)
 
