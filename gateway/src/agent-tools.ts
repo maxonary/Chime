@@ -1,3 +1,4 @@
+import { ResearchTasks } from "./research-tasks.js";
 import { randomUUID } from "node:crypto";
 import type { AgentBackend } from "./openclaw.js";
 
@@ -11,11 +12,24 @@ export class AgentTools {
   private abort = new AbortController();
   private closed = false;
   private sessionId = randomUUID();
-  constructor(private backend: AgentBackend, private send: (event: unknown) => void) {}
+  private research: ResearchTasks;
+  private researchCount = 0;
+  private pendingRequests = 0;
+  constructor(private backend: AgentBackend, private send: (event: unknown) => void, private changed: (active: number) => void = () => {}) {
+    this.research = new ResearchTasks(backend, send, active => {
+      this.researchCount = active;
+      this.reportWork();
+    });
+  }
+
+  private reportWork() {
+    if (!this.closed) this.changed(this.researchCount + this.pendingRequests);
+  }
 
   close() {
     this.closed = true;
     this.abort.abort();
+    this.research.close();
     this.groups.clear();
   }
 
@@ -54,11 +68,27 @@ export class AgentTools {
     for (const call of group.calls) {
       let output: string;
       try {
-        if (call.name !== "ask_openclaw" || this.seen.size > 64) throw new Error("Unsupported agent tool");
+        if (!["ask_openclaw", "start_openclaw_research", "manage_openclaw_research"].includes(call.name) || this.seen.size > 64) throw new Error("Unsupported agent tool");
         const args = JSON.parse(call.arguments);
-        if (!args || typeof args.request !== "string" || Object.keys(args).some(key => key !== "request")) throw new Error("Invalid agent arguments");
-        const result = await this.backend.run(args.request, `${this.sessionId}:${call.call_id}`, this.abort.signal);
-        output = JSON.stringify({ status: "completed", result });
+        if (call.name === "manage_openclaw_research") {
+          if (!args || !["status", "cancel"].includes(args.action) || typeof args.task_id !== "string" || Object.keys(args).some(key => !["action", "task_id"].includes(key))) throw new Error("Invalid research arguments");
+          output = JSON.stringify(this.research.manage(args.action, args.task_id));
+        } else {
+          if (!args || typeof args.request !== "string" || Object.keys(args).some(key => key !== "request")) throw new Error("Invalid agent arguments");
+          if (call.name === "start_openclaw_research") {
+            output = JSON.stringify(this.research.start(args.request));
+          } else {
+            this.pendingRequests++;
+            this.reportWork();
+            try {
+              const result = await this.backend.run(args.request, `${this.sessionId}:${call.call_id}`, this.abort.signal);
+              output = JSON.stringify({ status: "completed", result });
+            } finally {
+              this.pendingRequests--;
+              this.reportWork();
+            }
+          }
+        }
       } catch {
         output = JSON.stringify({ status: "unconfirmed", message: "The connected agent could not confirm a result. An action may already have started; do not retry automatically or claim it succeeded. Ask the user to check the agent before repeating an action." });
       }

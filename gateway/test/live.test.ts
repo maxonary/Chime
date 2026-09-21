@@ -242,6 +242,8 @@ for (const owner of ["alice", "bob"]) test(`OpenClaw routing is restricted to au
     } else {
       // A following caption proves all preceding upstream frames have been processed.
       remote.send(JSON.stringify({ type: "session.output_transcript.delta", delta: "hello" }));
+      assert.deepEqual(await next(), { type: "chime.research.state", active: 1 });
+      assert.deepEqual(await next(), { type: "chime.research.state", active: 0 });
       assert.equal((await next()).delta, "hello");
       assert.deepEqual(requests, []);
     }
@@ -265,6 +267,7 @@ test("a pending OpenClaw request does not block microphone audio or a simple spo
       { type: "response.completed", response: { id: "research", output: [] } },
     ]) remote.send(JSON.stringify({ type: "response.event", delegation_id: "background", event }));
     await started;
+    assert.deepEqual(await next(), { type: "chime.research.state", active: 1 });
     client.send(JSON.stringify({ type: "session.input_audio.append", audio: "AAAAAA==" }));
     assert.equal((await nextRemote()).type, "session.input_audio.append");
     remote.send(JSON.stringify({ type: "session.output_transcript.delta", delta: "Four." }));
@@ -272,6 +275,7 @@ test("a pending OpenClaw request does not block microphone audio or a simple spo
     assert.equal((await next()).delta, "Four.");
     assert.equal((await next()).type, "session.output_audio.delta");
     resolveAgent("Project is ready");
+    assert.deepEqual(await next(), { type: "chime.research.state", active: 0 });
     assert.equal(JSON.parse((await nextRemote()).item.output).result, "Project is ready");
     assert.equal((await nextRemote()).type, "response.create");
   } finally { resolveAgent?.("Cancelled"); await f.close(); }
@@ -285,4 +289,33 @@ test("connected identity comes from OpenClaw and is never selected by an unauthe
   const standalone = sessionConfiguration({}, "backend", false);
   assert.ok(!standalone.delegation.responses.tools.some((tool: any) => tool.name === "ask_openclaw"));
   assert.ok(!standalone.instructions.includes("You are Chime"));
+});
+
+test("background research resumes delegation, allows live audio, and clears bubble state on completion", async () => {
+  let finish!: (text: string) => void;
+  const f = await fixture("test-key", 500, { userId: "alice", run: async () => new Promise<string>(resolve => { finish = resolve; }) });
+  try {
+    const { client, next, remote, nextRemote, initial } = await start(f);
+    assert.ok(initial.session.delegation.responses.tools.some((tool: any) => tool.name === "start_openclaw_research"));
+    remote.send(JSON.stringify({ type: "session.started" })); await next();
+    for (const event of [
+      { type: "response.created", response: { id: "r" } },
+      { type: "response.output_item.done", item: { type: "function_call", call_id: "lookup", name: "start_openclaw_research", arguments: JSON.stringify({ request: "Research a project" }) } },
+      { type: "response.completed", response: { id: "r" } },
+    ]) remote.send(JSON.stringify({ type: "response.event", delegation_id: "d", event }));
+    assert.deepEqual(await next(), { type: "chime.research.state", active: 1 });
+    const acknowledgement = JSON.parse((await nextRemote()).item.output);
+    assert.equal(acknowledgement.status, "running");
+    assert.equal((await nextRemote()).type, "response.create");
+    client.send(JSON.stringify({ type: "session.input_audio.append", audio: "AAAAAA==" }));
+    assert.equal((await nextRemote()).type, "session.input_audio.append");
+    remote.send(JSON.stringify({ type: "session.output_transcript.delta", delta: "Four." }));
+    assert.equal((await next()).delta, "Four.");
+    finish("The lookup is complete.");
+    assert.deepEqual(await next(), { type: "chime.research.state", active: 0 });
+    const result = await nextRemote();
+    assert.equal(result.type, "session.commentary.append");
+    assert.equal(result.delegation_id, null);
+    assert.ok(result.content.includes(acknowledgement.task_id));
+  } finally { finish?.("Late"); await f.close(); }
 });

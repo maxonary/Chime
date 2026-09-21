@@ -68,7 +68,15 @@ When OpenClaw is connected, it supplies the agent's identity: Chime is the app,
 not a hardcoded assistant name. Identity questions are resolved through the
 connected agent, without adding an identity lookup to connection startup. Simple
 questions stay with GPT-Live while research runs asynchronously; dependent agent
-actions remain serialized and are never retried automatically.
+actions remain serialized and are never retried automatically. Longer OpenClaw
+lookups can run as two independent background tasks: keep talking, ask for their
+status, or say “cancel the research.” Results arrive when ready. These tasks last
+only for the current voice connection; ending the call stops waiting for them.
+
+A light haptic confirms the microphone is ready. The bubble breathes while
+listening, pulses with speech, and slowly turns its reflections while researching.
+Speaking takes visual priority over research. No labels or controls are added to
+the bubble; Reduce Motion and inactive-screen behavior remain respected.
 
 ## Run the gateway
 

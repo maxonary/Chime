@@ -86,7 +86,7 @@ server requests. Keep the existing interactive dashboard login policy intact.
 The gateway refuses redirects, so an Access login page fails rather than silently
 becoming an agent reply.
 
-Only the configured authenticated Watch user receives the `ask_openclaw` tool.
+Only the configured authenticated user receives the OpenClaw tools.
 Other users retain ordinary voice service. Model arguments cannot choose a host,
 agent, credential, or user identity. The operator token stays off the Watch, and
 OpenClaw retains its configured permissions and confirmation requirements. This
@@ -101,19 +101,38 @@ compiled summary. **Forget everything on the Watch does not delete OpenClaw's
 history or memory.** Manage those through OpenClaw.
 
 Calls wait for the Responses turn to complete before executing; duplicate call IDs
-are ignored. Requests are bounded, serialized per connector, time out after 90
-seconds, and are cancelled when the Watch disconnects. Cancellation cannot undo
-an action already performed. Failed or uncertain results are reported as
-unconfirmed and are never automatically retried. The request ID is a trace ID,
-not an exactly-once guarantee. Long-running jobs and remote approval dialogs must
-be checked in OpenClaw; this connector does not auto-approve them.
+are ignored. `ask_openclaw` keeps ordinary queries and authorized actions serialized
+in the stable session. `start_openclaw_research` instead acknowledges a task ID
+immediately and uses a separate hashed OpenClaw session per task, so a lookup does
+not occupy the normal agent session. Research requests must include their relevant
+context because these sessions do not share the stable session's transcript.
+OpenClaw's global `agents.defaults.maxConcurrent` still limits actual concurrency.
+
+Two research requests can run per connector, with at most eight task records per
+voice connection and a 90-second deadline. `manage_openclaw_research` accepts
+`status` or `cancel` and a task ID (or `all`), scoped to that voice connection.
+Full results are retained in memory until disconnect. A single quiet progress
+update and a bounded result excerpt are appended to GPT-Live with
+`delegation_id: null`; the backend can retrieve full results through the status
+tool. `chime.research.state` sends only the active work count to the app for bubble
+motion, including ordinary Responses delegations such as web searches.
+
+Research requests instruct OpenClaw to perform lookups only. This is a model
+instruction, **not a read-only permission boundary**: configure OpenClaw's own tool
+permissions if you need that guarantee. Chime does not auto-approve remote dialogs.
+Cancellation, timeout, or disconnect aborts the HTTP request and suppresses late
+results, but cannot guarantee remote work has stopped or undo an action. Tasks do
+not survive a voice disconnect or gateway restart. Failed or uncertain results are
+reported as unconfirmed and never automatically retried. Request IDs are for
+tracing, not exactly-once guarantees. Check unresolved work directly in OpenClaw.
 
 Deployment check: first verify authenticated `GET /v1/models` from outside the
 browser, then ask the Watch a harmless agent question and confirm the resulting
 Chime session in OpenClaw. Do not report the connection as active based only on a
 successful build or dashboard login.
 
-References: [AlphaClaw API proxy](https://github.com/chrysb/alphaclaw#openai-compatible-v1-proxy),
+References: [OpenClaw concurrency](https://docs.openclaw.ai/concepts/queue),
+[AlphaClaw API proxy](https://github.com/chrysb/alphaclaw#openai-compatible-v1-proxy),
 [OpenClaw Responses API](https://docs.openclaw.ai/gateway/openresponses-http-api),
 [GPT-Live delegation](https://developers.openai.com/api/docs/guides/live-delegation),
 and [Cloudflare service tokens](https://developers.cloudflare.com/cloudflare-one/access-controls/service-credentials/service-tokens/).
