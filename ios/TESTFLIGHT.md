@@ -38,15 +38,21 @@ This does not submit the app for public App Store release.
 1. Install Apple's TestFlight app on your iPhone and accept the tester invitation.
 2. Install Chime in TestFlight. Install its companion Watch app from the build's
    details or the iPhone Watch app.
-3. On the first iPhone launch, enter the HTTPS Chime gateway address and private
-   **Chime access token** in Preferences. Do not enter an OpenAI API key.
-4. Save, swipe right to the bubble, tap it, and grant microphone permission.
-5. Open Chime on the paired Watch. Connection settings transfer automatically;
-   **Sync to Watch** retries if needed. A queued transfer is not a delivery receipt.
+3. If Chime already works on your Watch, open it there and on the iPhone. The
+   iPhone automatically imports the Watch's connection and opens the bubble.
+   Both apps need build 2 or later for Watch-to-iPhone setup.
+4. Tap the bubble and grant microphone permission.
+5. Without a configured Watch, expand **Advanced connection** in Preferences
+   and enter your HTTPS gateway and Chime service token once. The phone then
+   sends that connection to its paired Watch.
 
-Existing Watch credentials are preserved until the iPhone sends a saved connection.
-The phone and Watch keep independent conversation memory and voice preferences.
-A fresh TestFlight install needs setup; credentials are never baked into the binary.
+Existing Watch credentials are preserved. A Watch can only bootstrap a phone
+that has no saved connection; delayed Watch messages cannot replace credentials
+set or rotated on the phone. The phone owns subsequent connection changes.
+Application context provides durable delivery; reachable peers also receive an
+immediate message. A queued transfer is not a delivery receipt. The phone and
+Watch keep independent conversation memory and voice preferences. No credentials
+are baked into the binary.
 
 ## Release checks
 

@@ -19,6 +19,19 @@ struct AppSettings: Codable {
     self.lastActiveConversationId = lastActiveConversationId
   }
 
+  var hasConnection: Bool { !userToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
+  /// Return true only when a valid incoming connection changes local settings.
+  /// A delayed Watch message must not undo setup or rotation on the phone.
+  mutating func importCompanionConnection(address: String, token: String, bootstrapOnly: Bool) -> Bool {
+    guard !bootstrapOnly || !hasConnection else { return false }
+    var incoming = self
+    guard incoming.setConnection(address: address, token: token),
+          incoming.gatewayURL != gatewayURL || incoming.userToken != userToken else { return false }
+    self = incoming
+    return true
+  }
+
   /// Merge a paired-device connection without replacing preferences or history.
   mutating func setConnection(address: String, token: String) -> Bool {
     let token = token.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -25,8 +25,6 @@ struct SettingsView: View {
       if sessionManager.isConnected {
         Button(sessionManager.isMuted ? "Unmute microphone" : "Mute microphone") { sessionManager.toggleMute() }
       }
-      Text("Changes apply to your next conversation.")
-        .font(.caption2).foregroundStyle(.secondary)
     }
     .onChange(of: voice) { _, _ in save() }
     .onChange(of: webSearch) { _, _ in save() }

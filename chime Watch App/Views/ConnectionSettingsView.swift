@@ -4,38 +4,55 @@ import SwiftUI
 struct ConnectionSettingsView: View {
   @EnvironmentObject var sessionManager: AgentSessionManager
   @ObservedObject private var companion = CompanionConnection.shared
-  @State private var address = AppSettings.load().userToken.isEmpty
-    ? "https://chime-gateway.onrender.com" : AppSettings.load().gatewayURL.absoluteString
+  @State private var address = AppSettings.load().hasConnection
+    ? AppSettings.load().gatewayURL.absoluteString : "https://chime-gateway.onrender.com"
   @State private var token = AppSettings.load().userToken
   @State private var message: String?
 
   var body: some View {
     Section {
-      VStack(alignment: .leading, spacing: 12) {
+      VStack(alignment: .leading, spacing: 16) {
         Image("SoapBubble")
-          .resizable().scaledToFit().frame(height: 100)
+          .resizable().scaledToFit().frame(height: 110)
           .frame(maxWidth: .infinity).accessibilityHidden(true)
-        Text("Your voice, a little closer.").font(.title2)
-        Text("Connect once on your iPhone. Your paired Watch receives the connection automatically.")
-          .foregroundStyle(.secondary)
+        Text(companion.isConfigured ? "All connected." : "Your Watch knows the way.")
+          .font(.title2.weight(.medium))
+        Text(companion.isConfigured
+             ? "Your voice connection is ready on this iPhone."
+             : "Open Chime on your paired Apple Watch. We’ll bring your connection over and take you straight to the bubble.")
+          .font(.body).foregroundStyle(.secondary)
       }
+      .padding(.vertical, 12)
       .listRowBackground(Color.black)
     }
-    Section("Connection") {
-      TextField("Service address", text: $address)
-        .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-      SecureField("Chime access token", text: $token)
-        .textInputAutocapitalization(.never).autocorrectionDisabled()
-      Button("Save connection") { save() }
-      if let message { Text(message).font(.caption).foregroundStyle(.secondary) }
-      Text("Use your Chime service token, not an OpenAI API key.")
-        .font(.caption).foregroundStyle(.secondary)
+    if !companion.isConfigured {
+      Section {
+        Button("Connect with my Watch", systemImage: "applewatch") { companion.start() }
+        Text(companion.status).font(.callout).foregroundStyle(.secondary)
+      }
+    }
+    Section {
+      DisclosureGroup("Advanced connection") {
+        TextField("Service address", text: $address)
+          .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+        SecureField("Chime access token", text: $token)
+          .textInputAutocapitalization(.never).autocorrectionDisabled()
+        Button("Save connection") { save() }
+        if companion.isConfigured {
+          Button("Sync to Watch") { companion.sync() }
+        }
+        if let message { Text(message).font(.caption).foregroundStyle(.secondary) }
+        Text("For a new service or a phone without a configured Watch. Use a Chime service token, not an OpenAI API key.")
+          .font(.caption).foregroundStyle(.secondary)
+      }
     }
     .disabled(sessionManager.isListening)
-    Section("Apple Watch") {
-      Button("Sync to Watch") { companion.sync() }
-        .disabled(AppSettings.load().userToken.isEmpty)
-      Text(companion.status).font(.caption).foregroundStyle(.secondary)
+    .onChange(of: companion.isConfigured) { _, configured in
+      if configured {
+        let settings = AppSettings.load()
+        address = settings.gatewayURL.absoluteString
+        token = settings.userToken
+      }
     }
   }
 
@@ -47,7 +64,8 @@ struct ConnectionSettingsView: View {
     }
     settings.save()
     companion.sync()
-    message = "Saved. Swipe right to the bubble to start a conversation."
+    message = "Saved. Your connection is ready."
+    ChimeNavigation.shared.openBubble()
   }
 }
 #endif

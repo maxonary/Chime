@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased — Chime 🫧
 
+- Automatic iPhone setup from an already-connected Watch, with manual fields tucked into Advanced connection.
+- Redesigned iPhone Memory page with a bubble empty state and readable memory cards; hide empty reset controls and remove the next-conversation settings note.
+
 - Native iPhone voice app sharing the bubble interface, memory, and shortcuts with Watch; paired Watch connection setup from iPhone and a shared TestFlight archive scheme.
 
 - Detailed soap bubble app icon matching the voice screen and widgets; removed obsolete logo assets.

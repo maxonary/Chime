@@ -82,16 +82,18 @@ access. Live voice does not need LiveKit, Anthropic, or Perplexity.
 
 ## Run the iPhone app and distribute with TestFlight
 
-| Bubble · home | Connection · first launch |
-| :---: | :---: |
-| <img src="docs/images/iphone-bubble.png" width="220" alt="The centered reflective Chime bubble on an iPhone"> | <img src="docs/images/iphone-setup.png" width="220" alt="Chime connection setup and Watch pairing on iPhone"> |
+| Memory | Bubble · home | Automatic setup |
+| :---: | :---: | :---: |
+| <img src="docs/images/iphone-memory.png" width="220" alt="Bubble-themed Memory empty state on iPhone"> | <img src="docs/images/iphone-bubble.png" width="220" alt="The centered reflective Chime bubble on an iPhone"> | <img src="docs/images/iphone-setup.png" width="220" alt="Automatic Chime setup from a paired Watch"> |
 
 Select the shared **Chime** scheme in Xcode to run on an iPhone (iOS 26.5+).
 The app includes the Watch app and its widgets. Both use the same bubble, audio,
 preferences, and memory implementation. On a fresh phone install, Preferences
-opens for connection setup; enter your HTTPS gateway address and Chime service
-token once, then swipe right to the bubble. The paired Watch receives those
-connection settings through WatchConnectivity. Voice preferences and memory remain
+opens for automatic setup from an already-configured Watch. Open Chime on both
+devices; the iPhone receives the connection and returns to the bubble. Manual
+HTTPS gateway and service-token entry is tucked under **Advanced connection**
+for installations without a configured counterpart. Subsequent connection
+changes on iPhone still update the Watch through WatchConnectivity. Voice preferences and memory remain
 local to each device. No private service token or OpenAI key is bundled in a release.
 
 See [TestFlight release and installation](ios/TESTFLIGHT.md) for signing,

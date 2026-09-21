@@ -66,6 +66,19 @@ struct ConversationStoreTests {
     precondition(connection.gatewayURL.absoluteString == "https://example.com/voice" && connection.userToken == "new-token")
     precondition(connection.liveVoice == "willow" && !connection.autoResearch && connection.lastActiveConversationId == "keep-history",
                  "Pairing must not replace voice preferences or the local conversation pointer")
+    var freshPhone = AppSettings(autoResearch: false, lastActiveConversationId: "local-history")
+    precondition(freshPhone.importCompanionConnection(address: "https://example.com", token: "watch-token", bootstrapOnly: true))
+    precondition(freshPhone.hasConnection && freshPhone.userToken == "watch-token")
+    precondition(!freshPhone.autoResearch && freshPhone.lastActiveConversationId == "local-history")
+    precondition(!freshPhone.importCompanionConnection(address: "https://stale.example.com", token: "stale-token", bootstrapOnly: true),
+                 "A delayed Watch response cannot replace a configured phone connection")
+    var pairedWatch = AppSettings()
+    precondition(!pairedWatch.importCompanionConnection(address: "http://example.com", token: "invalid", bootstrapOnly: false))
+    precondition(pairedWatch.importCompanionConnection(address: "https://example.com", token: "phone-token", bootstrapOnly: false))
+    precondition(!pairedWatch.importCompanionConnection(address: "https://example.com", token: "phone-token", bootstrapOnly: false),
+                 "Duplicate context and live messages must not cause a sync loop")
+    precondition(pairedWatch.importCompanionConnection(address: "https://example.com", token: "rotated-token", bootstrapOnly: false),
+                 "A phone token rotation must still update the Watch")
     let oldMessage = Data(#"{"id":"old","role":"user","content":"Old chat","timestamp":0}"#.utf8)
     let decodedMessage = try JSONDecoder().decode(Message.self, from: oldMessage)
     precondition(decodedMessage.transcriptStartMs == nil)
