@@ -1,4 +1,4 @@
-import { anthropic } from "./cma.js";
+import { getAnthropic } from "./cma.js";
 
 /**
  * A tool gated by `always_ask` parks the session in `requires_action` until the
@@ -14,7 +14,7 @@ async function resolvePendingAction(sessionId: string, eventIds: string[]): Prom
   let resolved = false;
   for (const toolUseId of eventIds) {
     try {
-      await anthropic.beta.sessions.events.send(sessionId, {
+      await getAnthropic().beta.sessions.events.send(sessionId, {
         events: [{ type: "user.tool_confirmation", tool_use_id: toolUseId, result: "allow" }],
       });
       resolved = true;
@@ -33,7 +33,7 @@ async function resolvePendingAction(sessionId: string, eventIds: string[]): Prom
  */
 async function clearPendingActions(sessionId: string): Promise<void> {
   const recent: Array<{ type: string; stop_reason?: { type?: string; event_ids?: string[] } }> = [];
-  for await (const ev of anthropic.beta.sessions.events.list(sessionId)) {
+  for await (const ev of getAnthropic().beta.sessions.events.list(sessionId)) {
     recent.push(ev as (typeof recent)[number]);
     if (recent.length >= 400) break;
   }
@@ -60,12 +60,12 @@ async function sendUserTurn(sessionId: string, userText: string, contextNotes: s
     })),
   ];
   try {
-    await anthropic.beta.sessions.events.send(sessionId, { events });
+    await getAnthropic().beta.sessions.events.send(sessionId, { events });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (!msg.includes("waiting on responses to events")) throw err;
     await clearPendingActions(sessionId);
-    await anthropic.beta.sessions.events.send(sessionId, { events });
+    await getAnthropic().beta.sessions.events.send(sessionId, { events });
   }
 }
 
@@ -92,7 +92,7 @@ export async function runTurn(
   onLateResult: (text: string) => void,
   contextNotes: string[] = [],
 ): Promise<TurnResult> {
-  const stream = await anthropic.beta.sessions.events.stream(sessionId);
+  const stream = await getAnthropic().beta.sessions.events.stream(sessionId);
 
   // system.message events are only accepted immediately after a user.message
   // in the same request, so queued context rides along with the next turn.
@@ -158,7 +158,7 @@ export async function runTurnStreaming(
   contextNotes: string[],
   emit: (text: string) => void,
 ): Promise<string> {
-  const stream = await anthropic.beta.sessions.events.stream(sessionId, {
+  const stream = await getAnthropic().beta.sessions.events.stream(sessionId, {
     event_deltas: ["agent.message"],
   });
 

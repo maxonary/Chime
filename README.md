@@ -1,256 +1,217 @@
-# Chime 🧿 Apple Watch Voice Agent
+# Chime 🫧
 
-A lightweight voice assistant for Apple Watch Series 8+ that connects to an AI agent with web research capability.
+<img src="chime%20Watch%20App/Assets.xcassets/AppIcon.appiconset/chime-bubble.png" width="120" alt="Chime app icon: a detailed reflective soap bubble on black">
 
-## Overview
+**A quiet bubble. A conversation when you need one.**
 
-Chat with Claude via your Apple Watch. The agent has full access to the web via Perplexity, so it can answer questions about current events, look up prices, research topics, and more—with citations.
+Chime puts a reflective soap bubble on your iPhone and Apple Watch. Tap it to talk; tap again
+to end the conversation. It grows when the microphone is enabled and pulses with
+your voice and the agent’s reply. Useful details become compact memory for next time.
 
-**Built on:** SwiftUI (watchOS) + Node.js Gateway + Anthropic Claude + Perplexity (web research)
+## On your wrist
 
----
+| Memory · swipe right | Bubble · home | Preferences · swipe left |
+| :---: | :---: | :---: |
+| <img src="docs/images/memory.png" width="200" alt="Memory page with automatic memory explanation and Forget everything button"> | <img src="docs/images/bubble-idle.png" width="200" alt="Small reflective soap bubble with the microphone off"> | <img src="docs/images/preferences.png" width="200" alt="Preferences page with voice selection and web search toggle"> |
 
-## Quick Start
+Actual screenshots from the watchOS 26.5 simulator. The memory screenshot shows a
+fresh conversation store; your page fills with remembered details automatically.
 
-### Prerequisites
+| Bubble state | What you see |
+| --- | --- |
+| Microphone off or muted | A small bubble |
+| Microphone enabled | A larger bubble |
+| Speech coming in or playing out | Pulses driven by the audio level |
+| Connecting or ending | A small bubble with a progress indicator |
 
-- Apple Watch Series 8 or later (or watchOS 10+ simulator)
-- Node.js 20+
-- Anthropic API key ([get one free](https://console.anthropic.com/))
-- Perplexity API key ([get one here](https://www.perplexity.ai/))
-- LiveKit instance (for agent backend)
+The center screen stays fixed: no vertical scrolling, no Crown scrolling or zoom,
+no branding, and no tap reminder. Swipe horizontally to open the two side pages.
+The Digital Crown remains available for their content and preferences. VoiceOver
+announces the conversation state; Reduce Motion disables pulsing and animated transitions.
+Animation also pauses on a dimmed or inactive display and when the bubble is offscreen.
 
-### 1. Start the gateway
+## Conversations that carry forward
+
+Memory is compiled automatically after calls and saved on each device before older
+transcripts are pruned. The latest 12 turns remain for continuity; failed updates keep
+their source text for retry. The next voice session receives compact memory and bounded
+recent context. The memory page shows useful facts and ongoing context, with a confirmed
+**Forget everything** action. Summaries can lose detail or make mistakes; they are not
+verbatim conversation history.
+
+Preferences offer voice selection and web search. Connection credentials are configured
+on the iPhone and sent to its paired Watch, so there are no server addresses or tokens to type on the Watch.
+This is app-managed memory, separate from ChatGPT account memory or cross-device cloud sync.
+
+Chime ends a call when it enters the background. Muting keeps it connected; tap the
+bubble again to disconnect. Audio is streamed through the gateway and is not saved to
+files by Chime. OpenAI credentials remain on the server.
+
+On iPhone, Apple's voice processing provides echo cancellation, noise suppression,
+and automatic microphone gain. The microphone stays open during agent speech so you
+can interrupt or ask a simple question while research continues. GPT-Live decides
+when to speak; there is no app-level volume threshold that cuts off quiet speech.
+Playback uses a short 180 ms refill cushion to absorb network jitter. Opening the
+app checks gateway health to begin waking an idle server without starting a billed
+voice session. Free Render instances can still need a cold start after inactivity.
+
+The current Series 8 audio path takes turns: the microphone is silenced during the
+agent’s reply and a short acoustic tail to avoid echo. Spoken interruption is not yet
+supported on Watch. The tested device could not start the voice-processing audio unit, so Chime
+uses ordinary audio I/O with asynchronous audio-session activation.
+
+See [Watch setup and interaction checks](watch/SETUP.md),
+[bubble artwork and motion](watch/ARTWORK.md), and
+[screenshot provenance](docs/images/README.md).
+
+When OpenClaw is connected, it supplies the agent's identity: Chime is the app,
+not a hardcoded assistant name. Identity questions are resolved through the
+connected agent, without adding an identity lookup to connection startup. Simple
+questions stay with GPT-Live while research runs asynchronously; dependent agent
+actions remain serialized and are never retried automatically.
+
+## Run the gateway
+
+Requires Node.js 22+ and an OpenAI project with access to `gpt-live-1` and the
+configured Responses backend model.
 
 ```bash
 cd gateway
+npm ci
+cp .env.example .env
+```
 
-# Create .env with your keys
-cat > .env <<EOF
+Set these values in `gateway/.env`:
+
+```dotenv
+OPENAI_API_KEY=your-openai-project-key
+GATEWAY_TOKENS=your-private-watch-token:your-user-id
 PORT=8788
-GATEWAY_TOKENS="watch-token:myuserId"
-ANTHROPIC_API_KEY=sk-ant-...
-PERPLEXITY_API_KEY=pplx-...
-LIVEKIT_URL=ws://localhost:7880
-LIVEKIT_API_KEY=your-key
-LIVEKIT_API_SECRET=your-secret
-AGENT_MODEL=claude-opus-5
-AGENT_EFFORT=medium
-EOF
-
-npm install
-npm start
+LIVE_BACKEND_MODEL=gpt-5.6-luna
 ```
 
-Gateway runs at `http://localhost:8788`.
+Then run `npm start`. Check reachability with `curl http://localhost:8788/health`.
+The health endpoint checks the gateway process, not OpenAI credentials or model
+access. Live voice does not need LiveKit, Anthropic, or Perplexity.
 
-### 2. Build and run the watch app
+## Run the iPhone app and distribute with TestFlight
 
-**Option A: Xcode (recommended)**
-```bash
-cd watch
-# Open in Xcode or use: xcode-select -p
-# Then: Build and Run on Apple Watch simulator or device
-```
+| Memory | Bubble · home | Automatic setup |
+| :---: | :---: | :---: |
+| <img src="docs/images/iphone-memory.png" width="220" alt="Bubble-themed Memory empty state on iPhone"> | <img src="docs/images/iphone-bubble.png" width="220" alt="The centered reflective Chime bubble on an iPhone"> | <img src="docs/images/iphone-setup.png" width="220" alt="Automatic Chime setup from a paired Watch"> |
 
-**Option B: Swift Package Manager**
-```bash
-cd watch
-swift build
-```
+Select the shared **Chime** scheme in Xcode to run on an iPhone (iOS 26.5+).
+The app includes the Watch app and its widgets. Both use the same bubble, audio,
+preferences, and memory implementation. On a fresh phone install, Preferences
+opens for automatic setup from an already-configured Watch. Open Chime on both
+devices; the iPhone receives the connection and returns to the bubble. Manual
+HTTPS gateway and service-token entry is tucked under **Advanced connection**
+for installations without a configured counterpart. Subsequent connection
+changes on iPhone still update the Watch through WatchConnectivity. Voice preferences and memory remain
+local to each device. No private service token or OpenAI key is bundled in a release.
 
-### 3. Configure the watch app
+See [TestFlight release and installation](ios/TESTFLIGHT.md) for signing,
+archiving, uploads, and first-run setup.
 
-1. Tap the **Settings** (gear) icon
-2. Set:
-   - **Gateway URL**: `http://localhost:8788` (for local) or your server URL (for remote)
-   - **Auth Token**: `watch-token` (from GATEWAY_TOKENS)
-   - **Model**: Claude Opus 5 (or Sonnet 5)
-   - **Web Research**: Toggle ON
-3. Return to chat
+## Run the Watch app
 
-### 4. Start chatting
+1. Open `chime.xcodeproj` in Xcode. The project targets **watchOS 26.5+**; configure your signing team.
+2. Connect your Watch through its paired iPhone and obtain its ID with `xcrun devicectl list devices`.
+3. Configure the private Watch token in the ignored `gateway/.env` (or set `WATCH_TOKEN`). Then install:
 
-Type a message or tap the mic button to start a conversation. The agent can:
+   ```bash
+   GATEWAY_URL=https://your-gateway.example.com ./scripts/install-watch.sh YOUR_WATCH_ID
+   ```
 
-- Answer questions with web research (auto-cited)
-- Remember conversation context
-- Handle multi-turn conversations
+   Use `--fresh` on the first installation if no preferences file exists. The installer merges
+   credentials into device preferences without embedding them in the bundle, preserving voice
+   preferences and memory. This personal development workflow is not public account enrollment.
+4. Tap the bubble and allow microphone access. Swipe left for preferences or right for memory;
+   no connection fields need to be entered on the Watch.
 
----
-
-## Features
-
-### Text Chat
-Type messages and tap send. Responses stream in real-time.
-
-### Web Research
-When the agent needs current information (news, prices, recent events), it automatically:
-1. Searches via Perplexity
-2. Retrieves citations and snippets
-3. Cites sources naturally in its response
-
-Example:
-> **You**: "What's the latest ChatGPT news?"
->
-> **Agent**: "According to OpenAI's blog, GPT-4 Turbo was released in April 2024 with 128K token context... [continues with citations]"
-
-### Message History
-All conversations are saved locally on the watch in JSON format. Switch between chat threads in the UI.
-
-### Agent Memory
-The agent has access to a persistent memory store via Anthropic's managed agents API. It can:
-- Recall your preferences from past conversations
-- Store important facts about you
-- Maintain context across sessions
-
----
+Use HTTPS/WSS for a remote gateway, with WebSocket upgrades enabled. `localhost`
+on a physical Watch refers to the Watch itself, so use a reachable gateway hostname.
+The OpenAI API key goes only in the gateway environment, never in Watch settings.
+Verify audio, echo behavior, interruptions, and Bluetooth routing on real
+hardware before distributing a build.
 
 ## Architecture
 
-```
-Apple Watch (watchOS 10+)
-       |
-       | text messages + auth token
-       v
-   Gateway (Node.js)
-       |
-       |-- /v1/chat/completions --> Anthropic Claude
-       |                            (with memory store)
-       |
-       |-- /research endpoint  --> Perplexity API
-       |                           (for web search)
-       v
-   LiveKit Agent Worker
-       (runs Claude in agent mode)
+```text
+Apple Watch — AVAudioEngine + SwiftUI
+    │ authenticated WebSocket /v1/live
+    ▼
+Chime gateway — Node.js + ws
+    │ server-owned session.start, PCM16 mono / 24 kHz
+    ▼
+OpenAI GPT-Live — gpt-live-1
+    └── Responses backend — reasoning and optional web search
 ```
 
-**Key components:**
-- **AgentSessionManager** — Handles gateway communication and audio setup
-- **ConversationStore** — Persists message history (JSON) on watch
-- **Research module** — Calls Perplexity, formats citations
-- **AppSettings** — Stores gateway URL, token, preferences
+The gateway waits for `session.started` before accepting audio, allows only audio
+and input-control commands, bounds message and output queues, and finalizes the
+upstream session when the Watch disconnects. The Watch resamples microphone audio
+and plays raw PCM directly without temporary WAV files.
 
----
+`chime Watch App/` contains the active application. `gateway/src/live.ts` implements
+the voice relay. The `agent/` worker and the gateway’s Claude routes remain for
+legacy integrations; Claude memory and connected-app tools are not part of the
+GPT-Live conversation. See [gateway documentation](gateway/README.md) for details.
 
-## File Structure
+## Validation
 
-```
-.
-├── gateway/                   # Node.js backend
-│   ├── src/
-│   │   ├── server.ts          # Express routes + middleware
-│   │   ├── provision.ts       # Agent + session setup
-│   │   ├── turn.ts            # Agent turn execution
-│   │   ├── research.ts        # Perplexity integration
-│   │   ├── connect.ts         # OAuth / vault setup
-│   │   └── ...
-│   ├── package.json
-│   └── .env.example
-│
-└── watch/                     # watchOS app
-    ├── Haptic/
-    │   ├── HapticApp.swift
-    │   ├── Models/
-    │   │   ├── Message.swift
-    │   │   ├── AppSettings.swift
-    │   │   └── Conversation.swift
-    │   ├── Managers/
-    │   │   ├── AgentSessionManager.swift
-    │   │   └── ConversationStore.swift
-    │   └── Views/
-    │       ├── ContentView.swift
-    │       ├── MessageListView.swift
-    │       ├── VoiceControlView.swift
-    │       └── SettingsView.swift
-    └── Package.swift
+```bash
+cd gateway
+npm run typecheck
+npm test
 ```
 
----
+Run the Watch checks on macOS from the repository root:
 
-## Configuration
+```bash
+./scripts/check-watch.sh
+```
 
-### Environment Variables (Gateway)
+This runs audio conversion and level-metering tests, transcript persistence, and memory lifecycle tests, checks compatibility
+with existing saved data, and compiles the app and widget extension sources with strict concurrency
+checks. It uses the SDK in `/Applications/Xcode.app`; set `DEVELOPER_DIR` if Xcode
+is installed elsewhere. These checks do not package, sign, or launch the app.
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `PORT` | Gateway port | No (default: 8788) |
-| `GATEWAY_TOKENS` | `token:userId` pairs | Yes |
-| `ANTHROPIC_API_KEY` | Claude API key | Yes |
-| `PERPLEXITY_API_KEY` | Perplexity API key | Yes |
-| `LIVEKIT_URL` | WebSocket URL | Yes |
-| `LIVEKIT_API_KEY` | LiveKit credential | Yes |
-| `LIVEKIT_API_SECRET` | LiveKit credential | Yes |
-| `AGENT_MODEL` | `claude-opus-5` or `claude-sonnet-5` | No (default: opus-5) |
-| `AGENT_EFFORT` | `low`, `medium`, `high` | No (default: medium) |
+Gateway tests use a mock GPT-Live upstream and cover authentication, protocol
+validation, audio and caption relay, and disconnect cleanup. Build the Watch target
+in Xcode and test a live conversation with configured credentials on hardware.
 
-### Watch App Settings (UI)
+## Open Chime quickly
 
-| Setting | Default | Notes |
-|---------|---------|-------|
-| Gateway URL | `http://localhost:8788` | Must be reachable from watch |
-| Auth Token | (empty) | From `GATEWAY_TOKENS` |
-| Model | Claude Opus 5 | Agent model to use |
-| Web Research | On | Toggle auto-research |
+Add **Chime** to your Watch face's complications or pin its bubble widget in the
+Smart Stack. You can also say **“Open Chime”** to Siri on the Watch or use its
+Shortcuts action. Each opens the bubble; tap it to begin listening.
+See [quick-access setup](watch/SETUP.md#quick-access-from-your-wrist) for instructions.
 
----
+<img src="docs/images/smart-stack.png" width="200" alt="Chime soap bubble launcher in the Apple Watch Smart Stack">
+
+## Connect an OpenClaw agent
+
+Chime can keep its live voice while delegating workspace questions and authorized
+actions to your hosted OpenClaw agent. Configure the connection on the gateway;
+no tokens or connection forms are needed on the Watch. See the
+[OpenClaw setup guide](gateway/README.md#connected-openclaw-agent-optional).
+OpenClaw memory remains separate from the Watch's compiled conversation memory.
 
 ## Troubleshooting
 
-### Watch can't connect to gateway
+- **Cannot connect:** check gateway reachability, the Watch token, WSS proxy support,
+  `OPENAI_API_KEY`, and access to both configured OpenAI models.
+- **Microphone unavailable:** allow Chime microphone access in Watch settings.
+- **Audio falls behind:** reconnect on a better network. Chime ends sessions with
+  excessive buffering rather than playing increasingly delayed speech.
+- **Web search unavailable:** enable it in settings before starting a new session.
+- **Changes do not apply mid-call:** end the conversation, update settings, then reconnect.
 
-**Check 1: Reachability**
-- If local: `curl http://localhost:8788/health`
-- If remote: Ensure gateway URL is publicly accessible or on same network
-
-**Check 2: Token**
-- Verify token in watch Settings matches `GATEWAY_TOKENS` on gateway
-- Restart the watch app and try again
-
-**Check 3: Gateway logs**
-- Look for `[chat]` errors: `invalid or missing gateway token`, `provisioning failed`, etc.
-
-### No web research results
-
-**Check 1: Perplexity API key**
-- Verify `PERPLEXITY_API_KEY` is set and valid
-- Check gateway logs: `[research] Search failed: ...`
-
-**Check 2: Rate limit**
-- Perplexity may rate-limit on free tier; wait a moment and retry
-- Check account balance if using paid tier
-
-### Messages not saving
-
-**Check 1: Storage permissions**
-- watchOS 10+ requires app storage permission
-- Delete and reinstall app if needed
-
-**Check 2: Disk space**
-- Watch storage is limited; old conversations may auto-delete
-
----
-
-## Development Roadmap
-
-### Completed ✅
-- Phase 1: Stripped old iOS/Android code
-- Phase 2: watchOS app with text chat
-- Phase 3: Perplexity web research integration
-- Agent memory (via Anthropic API)
-
-### In Progress 🔄
-- Phase 4: Voice recording + speech-to-text
-
-### Coming Soon 📋
-- Voice output / speech synthesis
-- Conversation history UI (browse past chats)
-- iPhone handoff (start on watch, continue on phone)
-- Offline message caching
-- Richer haptic feedback
-
----
+API references: [GPT-Live](https://developers.openai.com/api/docs/guides/live),
+[WebSocket audio](https://developers.openai.com/api/docs/guides/voice-websockets?api=live),
+[session lifecycle](https://developers.openai.com/api/docs/guides/live-conversations).
 
 ## License
 
-This source code is licensed under the license found in the [LICENSE](LICENSE) file in the root directory of this source tree.
+See [LICENSE](LICENSE).

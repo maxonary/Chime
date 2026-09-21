@@ -1,4 +1,4 @@
-import { anthropic } from "./cma.js";
+import { getAnthropic } from "./cma.js";
 
 export interface TaskSummary {
   id: string;
@@ -22,7 +22,7 @@ function textOf(content: Array<{ type: string; text?: string }>): string {
  */
 export async function listTasks(sessionId: string, limit: number): Promise<TaskSummary[]> {
   const events: Array<{ id: string; type: string; processed_at?: string | null; content?: unknown }> = [];
-  for await (const ev of anthropic.beta.sessions.events.list(sessionId)) {
+  for await (const ev of getAnthropic().beta.sessions.events.list(sessionId)) {
     events.push(ev as (typeof events)[number]);
     if (events.length >= 500) break;
   }

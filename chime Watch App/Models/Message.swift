@@ -6,13 +6,17 @@ struct Message: Identifiable, Codable {
   let content: String
   let timestamp: Date
   let metadata: MessageMetadata?
+  let transcriptStartMs: Double?
+  let transcriptEndMs: Double?
 
-  init(id: String = UUID().uuidString, role: MessageRole, content: String, timestamp: Date = Date(), metadata: MessageMetadata? = nil) {
+  init(id: String = UUID().uuidString, role: MessageRole, content: String, timestamp: Date = Date(), metadata: MessageMetadata? = nil, transcriptStartMs: Double? = nil, transcriptEndMs: Double? = nil) {
     self.id = id
     self.role = role
     self.content = content
     self.timestamp = timestamp
     self.metadata = metadata
+    self.transcriptStartMs = transcriptStartMs
+    self.transcriptEndMs = transcriptEndMs
   }
 }
 

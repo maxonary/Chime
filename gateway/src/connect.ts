@@ -1,6 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { Express, Request, Response } from "express";
-import { anthropic } from "./cma.js";
+import { getAnthropic } from "./cma.js";
 import { activeApps, appCredentials, getApp } from "./apps.js";
 import { ensureUser } from "./provision.js";
 import { notifyUser } from "./notify.js";
@@ -129,7 +129,7 @@ export function registerConnectRoutes(
     try {
       const { vaultId } = await ensureUser(userId);
       const connected = new Set<string>();
-      for await (const cred of anthropic.beta.vaults.credentials.list(vaultId)) {
+      for await (const cred of getAnthropic().beta.vaults.credentials.list(vaultId)) {
         const url = (cred as { auth?: { mcp_server_url?: string } }).auth?.mcp_server_url;
         if (url) connected.add(url);
       }
@@ -285,14 +285,14 @@ export function registerConnectRoutes(
       const { vaultId } = await ensureUser(verified.userId);
 
       // One credential per MCP server URL: replace any existing one.
-      for await (const cred of anthropic.beta.vaults.credentials.list(vaultId)) {
+      for await (const cred of getAnthropic().beta.vaults.credentials.list(vaultId)) {
         const url = (cred as { auth?: { mcp_server_url?: string } }).auth?.mcp_server_url;
         if (url === appDef.mcpUrl) {
-          await anthropic.beta.vaults.credentials.delete(cred.id, { vault_id: vaultId });
+          await getAnthropic().beta.vaults.credentials.delete(cred.id, { vault_id: vaultId });
         }
       }
 
-      await anthropic.beta.vaults.credentials.create(vaultId, {
+      await getAnthropic().beta.vaults.credentials.create(vaultId, {
         display_name: `${appDef.displayName} (${verified.userId})`,
         auth: {
           type: "mcp_oauth",

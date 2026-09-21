@@ -1,4 +1,4 @@
-import { anthropic } from "./cma.js";
+import { getAnthropic } from "./cma.js";
 import { config } from "./config.js";
 import { loadStore, saveStore, userResources, type UserResources } from "./store.js";
 import { activeApps } from "./apps.js";
@@ -22,7 +22,7 @@ Ground rules:
 export async function ensureShared(): Promise<{ agentId: string; environmentId: string }> {
   const store = await loadStore();
   if (!store.shared.environmentId) {
-    const env = await anthropic.beta.environments.create({
+    const env = await getAnthropic().beta.environments.create({
       name: "visionclaw-cloud",
       config: { type: "cloud", networking: { type: "unrestricted" } },
     });
@@ -30,7 +30,7 @@ export async function ensureShared(): Promise<{ agentId: string; environmentId: 
     console.log("[provision] environment created:", env.id);
   }
   if (!store.shared.agentId) {
-    const agent = await anthropic.beta.agents.create({
+    const agent = await getAnthropic().beta.agents.create({
       name: "VisionClaw Action Agent",
       model: { id: config.agentModel, effort: config.agentEffort },
       system: AGENT_SYSTEM_PROMPT,
@@ -43,14 +43,14 @@ export async function ensureShared(): Promise<{ agentId: string; environmentId: 
   } else {
     // Reconcile: adding an app to the registry must reach an agent that already
     // exists, or its new tools are silently missing. Version-bump only on drift.
-    const agent = await anthropic.beta.agents.retrieve(store.shared.agentId);
+    const agent = await getAnthropic().beta.agents.retrieve(store.shared.agentId);
     // Compare servers *and* tool config: a changed permission policy is drift
     // just as much as a new app is.
     const appsDrifted =
       appSignature(agent.mcp_servers ?? [], agent.tools ?? []) !== appSignature(mcpServers(), agentTools());
     const modelDrifted = modelSignature(agent.model) !== modelSignature(wantModel());
     if (appsDrifted || modelDrifted) {
-      const updated = await anthropic.beta.agents.update(store.shared.agentId, {
+      const updated = await getAnthropic().beta.agents.update(store.shared.agentId, {
         mcp_servers: mcpServers(),
         tools: agentTools(),
         model: wantModel(),
@@ -127,7 +127,7 @@ function agentTools() {
 
 async function sessionUsable(sessionId: string): Promise<boolean> {
   try {
-    const s = await anthropic.beta.sessions.retrieve(sessionId);
+    const s = await getAnthropic().beta.sessions.retrieve(sessionId);
     return s.status !== "terminated" && s.archived_at == null;
   } catch {
     return false;
@@ -144,7 +144,7 @@ export async function ensureUser(userId: string): Promise<Required<UserResources
   const u = await userResources(userId);
 
   if (!u.memoryStoreId) {
-    const memStore = await anthropic.beta.memoryStores.create({
+    const memStore = await getAnthropic().beta.memoryStores.create({
       name: `visionclaw-memory-${userId}`,
       description:
         "Long-term memory about the owner: preferences, people, places, routines, and ongoing threads. " +
@@ -155,13 +155,13 @@ export async function ensureUser(userId: string): Promise<Required<UserResources
   }
 
   if (!u.vaultId) {
-    const vault = await anthropic.beta.vaults.create({ display_name: `visionclaw-vault-${userId}` });
+    const vault = await getAnthropic().beta.vaults.create({ display_name: `visionclaw-vault-${userId}` });
     u.vaultId = vault.id;
     console.log(`[provision] vault for ${userId}:`, vault.id);
   }
 
   if (!u.sessionId || !(await sessionUsable(u.sessionId))) {
-    const session = await anthropic.beta.sessions.create({
+    const session = await getAnthropic().beta.sessions.create({
       agent: agentId,
       environment_id: environmentId,
       title: `visionclaw:${userId}`,
@@ -182,11 +182,11 @@ export async function ensureUser(userId: string): Promise<Required<UserResources
     // A live session keeps the tool slate it was created with, so newly added
     // apps need a session-local update too. History and memory are preserved.
     try {
-      const live = await anthropic.beta.sessions.retrieve(u.sessionId);
+      const live = await getAnthropic().beta.sessions.retrieve(u.sessionId);
       const have = appSignature(live.agent?.mcp_servers ?? [], live.agent?.tools ?? []);
       const want = appSignature(mcpServers(), agentTools());
       if (have !== want && live.status === "idle") {
-        await anthropic.beta.sessions.update(u.sessionId, {
+        await getAnthropic().beta.sessions.update(u.sessionId, {
           agent: { mcp_servers: mcpServers(), tools: agentTools() },
         });
         console.log(`[provision] session apps reconciled for ${userId}`);

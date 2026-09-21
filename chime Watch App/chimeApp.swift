@@ -8,6 +8,8 @@ struct chimeApp: App {
     WindowGroup {
       ContentView()
         .environmentObject(sessionManager)
+        .preferredColorScheme(.dark)
+        .task { CompanionConnection.shared.start() }
     }
   }
 }

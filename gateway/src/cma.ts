@@ -1,4 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-/** One client for the whole gateway. Reads ANTHROPIC_API_KEY from the environment. */
-export const anthropic = new Anthropic();
+let client: Anthropic | undefined;
+/** Legacy Claude routes initialize their client only when used. */
+export function getAnthropic(): Anthropic {
+  return client ??= new Anthropic();
+}

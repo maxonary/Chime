@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased — Chime 🫧
+
+- iPhone echo cancellation, noise suppression, and continuous microphone input during replies; preserve the Series 8 audio workaround.
+- Short playback refill buffer, foreground gateway warmup, and connection timing diagnostics.
+- Direct simple answers during background research and agent identity sourced from the connected OpenClaw instead of a fixed Chime persona.
+
+- Automatic iPhone setup from an already-connected Watch, with manual fields tucked into Advanced connection.
+- Redesigned iPhone Memory page with a bubble empty state and readable memory cards; hide empty reset controls and remove the next-conversation settings note.
+
+- Native iPhone voice app sharing the bubble interface, memory, and shortcuts with Watch; paired Watch connection setup from iPhone and a shared TestFlight archive scheme.
+
+- Detailed soap bubble app icon matching the voice screen and widgets; removed obsolete logo assets.
+
+- Bubble launchers for Watch face complications and Smart Stack, plus an Open Chime Siri/Shortcuts action.
+
+- Optional OpenClaw voice delegation with server-only credentials, per-user access, and Cloudflare service authentication.
+
+- Reflective soap bubble voice interface with microphone-driven size and audio-level pulses.
+- A fixed home page with no tap reminder or vertical/Crown scrolling; swipe to memory and preferences.
+- GPT-Live streaming audio through an authenticated gateway, with automatic device provisioning.
+- Durable compact conversation memory on the Watch, recent context, retry-safe updates, and a forget action.
+- Series 8 audio activation fix and turn-taking playback to avoid speaker echo.
+- Current Watch setup instructions and screenshots of the bubble and both menus.
+
+## Historical upstream SDK releases
+
+The entries below were inherited from the Wearables Device Access Toolkit repository.
+They describe that upstream SDK, not Chime app releases.
+
 ## [0.4.0] - 2026-02-03
 
 > **Note:** This version requires updated configuration values from Wearables Developer Center to work with release channels.

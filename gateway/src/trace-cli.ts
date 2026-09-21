@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { anthropic } from "./cma.js";
+import { getAnthropic } from "./cma.js";
 import { loadStore } from "./store.js";
 import { config } from "./config.js";
 import { initStore } from "./store.js";
@@ -57,7 +57,7 @@ async function main(): Promise<void> {
   }
 
   const events: Ev[] = [];
-  for await (const ev of anthropic.beta.sessions.events.list(sessionId)) {
+  for await (const ev of getAnthropic().beta.sessions.events.list(sessionId)) {
     events.push(ev as unknown as Ev);
     if (events.length >= 1000) break;
   }
