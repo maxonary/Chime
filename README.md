@@ -7,22 +7,25 @@ streaming audio to OpenAI while keeping the API key off the Watch.
 ## What’s included
 
 - A full-screen photographic soap bubble with moving reflections and distinct listening/speaking motion.
-- A reminder that appears after 10 idle seconds; scroll the Digital Crown for transcript, mute, and settings controls.
+- A reminder that appears after 10 idle seconds; swipe horizontally to reach memory (left page) and preferences (right page), with no vertical scrolling on the bubble.
 - Streaming audio using `gpt-live-1`, with tap-to-start/end controls and independent user/assistant captions.
-- Locally saved transcripts and recent conversation context on reconnect.
+- Automatic compact memory of useful facts and ongoing context, saved on the Watch.
 - Voice selection and optional web search through OpenAI Responses delegation.
-- Editable gateway settings, microphone permission handling, and connection errors.
+- Automatic connection provisioning during personal-device installation, microphone permission handling, and connection errors.
 
 The app ends its session when it enters the background. Mute leaves the session
-active; use End to disconnect. Audio is not saved to files by Chime. Transcripts
-are stored locally on the Watch and recent text is sent as context when reconnecting.
+active; use End to disconnect. Audio is not saved to files by Chime. Memory is compiled after calls through OpenAI Responses and saved locally before older
+transcripts are pruned. The latest 12 turns remain for continuity; failed updates retain
+their source turns for retry. Memory and bounded recent text accompany the next session.
+This is app-managed memory, not ChatGPT account memory or cross-device cloud sync.
+The left page shows remembered facts and offers a confirmed “Forget everything” action.
 
 The Watch currently takes turns: microphone input is silenced during the agent’s
 reply and its short acoustic tail, so speaking over the reply does not interrupt it.
 This prevents speaker echo without the voice-processing audio unit, which failed
 at startup on the tested Series 8. The audio session activates asynchronously
 before opening the WebSocket, as required for networking on that Watch.
-The bubble respects Reduce Motion and pauses animation on a dimmed or inactive display.
+The bubble respects Reduce Motion and pauses animation on a dimmed or inactive display, or while another page is visible.
 See [artwork provenance and prompt](watch/ARTWORK.md).
 
 ## Run the gateway
@@ -51,12 +54,19 @@ access. Live voice does not need LiveKit, Anthropic, or Perplexity.
 
 ## Run the Watch app
 
-1. Open `chime.xcodeproj` in Xcode. The project currently targets **watchOS 26.5+**.
-2. Select the **chime Watch App** scheme and your Watch or Watch simulator.
-3. Configure your development signing team for a physical device, then build and run.
-4. Scroll down with the Digital Crown and open the sliders button. Set a reachable **Gateway URL** and the private
-   Watch token from `GATEWAY_TOKENS`. Choose a voice and whether to enable web search.
-5. Return to the bubble, tap it, and allow microphone access.
+1. Open `chime.xcodeproj` in Xcode. The project targets **watchOS 26.5+**; configure your signing team.
+2. Connect your Watch through its paired iPhone and obtain its ID with `xcrun devicectl list devices`.
+3. Configure the private Watch token in the ignored `gateway/.env` (or set `WATCH_TOKEN`). Then install:
+
+   ```bash
+   GATEWAY_URL=https://your-gateway.example.com ./scripts/install-watch.sh YOUR_WATCH_ID
+   ```
+
+   Use `--fresh` on the first installation if no preferences file exists. The installer merges
+   credentials into device preferences without embedding them in the bundle, preserving voice
+   preferences and memory. This personal development workflow is not public account enrollment.
+4. Tap the bubble and allow microphone access. Swipe left for preferences or right for memory;
+   no connection fields need to be entered on the Watch.
 
 Use HTTPS/WSS for a remote gateway, with WebSocket upgrades enabled. `localhost`
 on a physical Watch refers to the Watch itself, so use a reachable gateway hostname.
@@ -101,7 +111,7 @@ Run the Watch checks on macOS from the repository root:
 ./scripts/check-watch.sh
 ```
 
-This runs audio conversion and transcript persistence tests, checks compatibility
+This runs audio conversion, transcript persistence, and memory lifecycle tests, checks compatibility
 with existing saved data, and compiles all Watch sources with strict concurrency
 checks. It uses the SDK in `/Applications/Xcode.app`; set `DEVELOPER_DIR` if Xcode
 is installed elsewhere. These checks do not package, sign, or launch the app.

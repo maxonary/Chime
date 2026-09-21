@@ -12,7 +12,8 @@ final class AgentSessionManager: ObservableObject {
   @Published private(set) var userTranscript = ""
   @Published private(set) var startedAt: Date?
   @Published var error: String?
-  let conversationStore = ConversationStore()
+  let conversationStore: ConversationStore
+  let memoryStore: MemoryStore
 
   var isConnected: Bool { state == .live }
   var isListening: Bool { state != .idle }
@@ -42,6 +43,9 @@ final class AgentSessionManager: ObservableObject {
   private var interruption: AnyCancellable?
 
   init() {
+    let store = ConversationStore()
+    conversationStore = store
+    memoryStore = MemoryStore(conversations: store)
     interruption = NotificationCenter.default.publisher(for: AVAudioSession.interruptionNotification)
       .receive(on: DispatchQueue.main)
       .sink { [weak self] notification in
@@ -58,7 +62,7 @@ final class AgentSessionManager: ObservableObject {
     guard settings.gatewayURL.host != nil,
           ["http", "https"].contains(settings.gatewayURL.scheme ?? ""),
           !settings.userToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-      error = "Add your gateway address and access token in Settings."
+      error = "This installation has not been connected to your voice service yet. Reinstall using the configured Watch installer."
       return
     }
     error = nil
@@ -98,17 +102,18 @@ final class AgentSessionManager: ObservableObject {
         let connection = URLSession.shared.webSocketTask(with: request)
         socket = connection
         connection.resume()
-        let conversation = conversationStore.currentConversation ?? conversationStore.createConversation(title: "Live conversation")
+        let history = memoryStore.recentHistory
+        let conversation = conversationStore.createConversation(title: "Live conversation")
         conversationId = conversation.id
-        let history = conversation.messages.suffix(20).map {
-          ["role": $0.role.rawValue, "content": String(decoding: $0.content.utf8.prefix(1500), as: UTF8.self)]
-        }
+        memoryStore.activeConversationID = conversation.id
         timeoutTask = Task { [weak self] in
           try? await Task.sleep(for: .seconds(25))
           guard !Task.isCancelled, let self, self.generation == id, self.state == .connecting else { return }
           self.fail("Connection timed out. Check your gateway and try again.")
         }
-        try await send(["type": "chime.session.start", "voice": settings.liveVoice ?? "marin", "research": settings.autoResearch, "history": history], on: connection)
+        let memory = memoryStore.content
+        try await send(["type": "chime.session.start", "voice": settings.liveVoice ?? "marin", "research": settings.autoResearch,
+                        "history": history, "memory": ["facts": memory.facts, "context": memory.context]], on: connection)
         guard generation == id, !Task.isCancelled else { return }
         while !Task.isCancelled, generation == id {
           let message = try await connection.receive()
@@ -382,5 +387,7 @@ final class AgentSessionManager: ObservableObject {
     socket = nil
     isMuted = false
     startedAt = nil
+    memoryStore.activeConversationID = nil
+    memoryStore.refresh()
   }
 }

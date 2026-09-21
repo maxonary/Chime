@@ -42,6 +42,26 @@ path prefix must be stripped by the reverse proxy. Keep the connection open unti
 Validation: `npm run typecheck` and `npm test`. Tests use a local mock upstream and
 never call a paid API. Protocol reference: [GPT-Live WebSockets](https://developers.openai.com/api/docs/guides/voice-websockets?api=live).
 
+## Compiled conversation memory
+
+Authenticated `POST /v1/memory` accepts `{memory: {facts: [], context: ""}, turns: [{role, content, timestamp}]}`.
+It uses the server-configured Responses model with strict structured output and `store: false`.
+The summary holds at most 12 facts (180 UTF-16 units each) and 1,200 units of ongoing context.
+Only user-confirmed details should be retained; corrections and requests to forget override old facts.
+Conversation content is untrusted data, not system instructions. Model summaries remain lossy and fallible.
+
+The Watch owns the durable summary and per-turn checkpoints. It processes bounded batches, retries
+failed updates on the next foreground/call end, and prunes covered source text only after saving memory.
+The gateway stores no memory on Render disk, so service restarts do not erase it. It accepts at most
+32 turns / 48 KB per request and one in-flight compilation per authenticated user; provider failures
+leave the Watch's previous summary intact. The memory request timeout is 30 seconds.
+
+`chime.session.start` also accepts this `memory` object. It enters the voice session as historical
+user context with a 3,500-byte cap; combined memory and recent history are capped at 8,000 bytes.
+This app-managed summary is separate from Responses conversation IDs and encrypted compaction items.
+See OpenAI's [conversation state](https://developers.openai.com/api/docs/guides/conversation-state)
+and [structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs) documentation.
+
 ## Legacy action agent (optional)
 
 

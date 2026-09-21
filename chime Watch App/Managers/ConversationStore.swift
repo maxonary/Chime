@@ -75,6 +75,31 @@ final class ConversationStore: ObservableObject {
     }
   }
 
+  func pruneCompiledMessages(_ ids: Set<String>, keepingRecent count: Int, excluding activeID: String?) {
+    let recent = Set(conversations.flatMap(\.messages).sorted { $0.timestamp < $1.timestamp }.suffix(count).map(\.id))
+    for index in conversations.indices where conversations[index].id != activeID {
+      var pruned = conversations[index]
+      pruned.messages.removeAll { ids.contains($0.id) && !recent.contains($0.id) }
+      // Retain the source and its checkpoint if the disk write fails.
+      if save(pruned) { conversations[index] = pruned }
+    }
+    if let id = currentConversation?.id { currentConversation = conversations.first { $0.id == id } }
+  }
+
+  func clear() {
+    pendingSave?.cancel()
+    pendingSave = nil
+    dirtyConversationIds.removeAll()
+    for conversation in conversations {
+      try? FileManager.default.removeItem(at: storePath.appendingPathComponent("\(conversation.id).json"))
+    }
+    conversations = []
+    currentConversation = nil
+    var settings = AppSettings.load(from: defaults)
+    settings.lastActiveConversationId = nil
+    settings.save(to: defaults)
+  }
+
   func updateConversationTitle(_ id: String, newTitle: String) {
     if let index = conversations.firstIndex(where: { $0.id == id }) {
       conversations[index].title = newTitle
@@ -84,15 +109,18 @@ final class ConversationStore: ObservableObject {
     }
   }
 
-  private func save(_ conversation: Conversation) {
+  @discardableResult
+  private func save(_ conversation: Conversation) -> Bool {
     dirtyConversationIds.insert(conversation.id)
     let path = storePath.appendingPathComponent("\(conversation.id).json")
     do {
       let data = try encoder.encode(conversation)
       try data.write(to: path, options: .atomic)
       dirtyConversationIds.remove(conversation.id)
+      return true
     } catch {
       print("[ConversationStore] Failed to save: \(error)")
+      return false
     }
   }
 

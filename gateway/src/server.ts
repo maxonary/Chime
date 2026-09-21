@@ -4,6 +4,7 @@ import express from "express";
 import { WebSocketServer, type WebSocket } from "ws";
 import { config } from "./config.js";
 import { attachLiveServer } from "./live.js";
+import { registerMemoryRoutes } from "./memory.js";
 import { initStore } from "./store.js";
 import { ensureUser } from "./provision.js";
 import { runTurn, runTurnStreaming, queueContext, drainContext } from "./turn.js";
@@ -54,6 +55,10 @@ function userFromRequest(req: express.Request, explicitToken?: string): string |
 // ---------- app connections (OAuth -> vault) ----------
 
 registerConnectRoutes(app, userFromRequest);
+registerMemoryRoutes(app, userFromRequest, {
+  apiKey: process.env.OPENAI_API_KEY,
+  model: process.env.LIVE_BACKEND_MODEL ?? "gpt-5.6-luna",
+});
 
 // ---------- web research (for agent context) ----------
 

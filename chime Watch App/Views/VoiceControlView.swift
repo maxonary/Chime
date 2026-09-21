@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct VoiceControlView: View {
+  var isVisible = true
   @EnvironmentObject var sessionManager: AgentSessionManager
   @Environment(\.scenePhase) private var scenePhase
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -27,7 +28,7 @@ struct VoiceControlView: View {
         // The hit target is stable and independent of the moving artwork.
         Rectangle().fill(.black)
           .overlay {
-            SoapBubbleView(activity: activity)
+            SoapBubbleView(activity: activity, isVisible: isVisible)
               .padding(4)
               .padding(.bottom, 18)
               .allowsHitTesting(false)
@@ -52,12 +53,13 @@ struct VoiceControlView: View {
         .allowsHitTesting(false)
     }
     .task(id: hintGeneration) {
-      guard scenePhase == .active, sessionManager.state == .idle else { return }
+      guard isVisible, scenePhase == .active, sessionManager.state == .idle else { return }
       do { try await Task.sleep(for: .seconds(10)) }
       catch { return }
-      guard !Task.isCancelled, scenePhase == .active, sessionManager.state == .idle else { return }
+      guard !Task.isCancelled, isVisible, scenePhase == .active, sessionManager.state == .idle else { return }
       withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.5)) { showHint = true }
     }
+    .onChange(of: isVisible) { _, _ in resetHint() }
     .onChange(of: scenePhase) { _, _ in resetHint() }
     .onChange(of: sessionManager.state) { _, _ in resetHint() }
   }

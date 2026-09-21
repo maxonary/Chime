@@ -6,12 +6,13 @@ struct SoapBubbleView: View {
   enum Activity { case idle, connecting, listening, speaking, muted }
 
   let activity: Activity
+  var isVisible = true
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.isLuminanceReduced) private var isLuminanceReduced
   @Environment(\.scenePhase) private var scenePhase
   @State private var origin = Date()
 
-  private var paused: Bool { reduceMotion || isLuminanceReduced || scenePhase != .active }
+  private var paused: Bool { reduceMotion || isLuminanceReduced || scenePhase != .active || !isVisible }
   private var strength: Double {
     switch activity {
     case .speaking: return 1

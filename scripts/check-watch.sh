@@ -13,7 +13,7 @@ if [[ ! -x "$swift_compiler" || ! -d "$watch_sdk" ]]; then
 fi
 
 check_dir="$(mktemp -d "${TMPDIR:-/tmp}/chime-watch-checks.XXXXXX")"
-trap 'rm -f "$check_dir/audio-tests" "$check_dir/store-tests" "$check_dir/watch.o"; rmdir "$check_dir"' EXIT
+trap 'rm -f "$check_dir/audio-tests" "$check_dir/store-tests" "$check_dir/memory-tests" "$check_dir/watch.o"; rmdir "$check_dir"' EXIT
 cd "$repo_root"
 
 "$swift_compiler" -sdk "$mac_sdk" \
@@ -27,6 +27,14 @@ cd "$repo_root"
   "chime Watch App/Managers/ConversationStore.swift" \
   watch/tests/ConversationStoreTests.swift -o "$check_dir/store-tests"
 "$check_dir/store-tests"
+
+"$swift_compiler" -sdk "$mac_sdk" \
+  "chime Watch App/Models/AppSettings.swift" \
+  "chime Watch App/Models/Message.swift" \
+  "chime Watch App/Managers/ConversationStore.swift" \
+  "chime Watch App/Managers/MemoryStore.swift" \
+  watch/tests/MemoryStoreTests.swift -o "$check_dir/memory-tests"
+"$check_dir/memory-tests"
 
 # Compile the actual Watch sources to an object file. This checks code generation
 # as well as types; it does not replace an Xcode bundle build or a device run.
