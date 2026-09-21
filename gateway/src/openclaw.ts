@@ -17,7 +17,7 @@ export interface OpenClawOptions {
 
 export const OPENCLAW_TOOL = {
   type: "function", name: "ask_openclaw",
-  description: "Ask the user's connected OpenClaw agent about its knowledge, memory, projects, or tools. Send a complete request with relevant context and the user's corrections. Only request actions the user has authorized. Never claim success before the agent confirms it.",
+  description: "Ask the user's connected OpenClaw agent about its own identity, knowledge, memory, projects, or tools. Its configured identity is the source of the voice agent name; Chime is only the client app. Send a complete request with relevant context and the user's corrections. Only request actions the user has authorized. Never claim success before the agent confirms it.",
   strict: true,
   parameters: {
     type: "object", additionalProperties: false, required: ["request"],
@@ -59,7 +59,7 @@ export function createOpenClawBackend(options: OpenClawOptions): AgentBackend {
           signal: AbortSignal.any([signal, AbortSignal.timeout(options.timeoutMs ?? 90000)]),
           body: JSON.stringify({
             model: `openclaw/${agentId}`, user, stream: false,
-            instructions: "You are responding to your owner through Chime on Apple Watch. Voice transcripts can contain errors: ask about ambiguous details before taking action. Keep replies brief and suitable for speech. Follow your existing tool permissions and confirmation requirements. Never auto-approve a pending confirmation. Report an action as completed only after verifying its result. The request ID is for tracing, not a guarantee of exactly-once execution.",
+            instructions: "You are responding to your owner through the Chime voice app on iPhone or Apple Watch. Keep your own configured identity; Chime is the client app, not your name. Voice transcripts can contain errors: ask about ambiguous details before taking action. Keep replies brief and suitable for speech. Follow your existing tool permissions and confirmation requirements. Never auto-approve a pending confirmation. Report an action as completed only after verifying its result. The request ID is for tracing, not a guarantee of exactly-once execution.",
             input: JSON.stringify({ request_id: operationId, request }), max_output_tokens: 1200,
           }),
         });

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased — Chime 🫧
 
+- iPhone echo cancellation, noise suppression, and continuous microphone input during replies; preserve the Series 8 audio workaround.
+- Short playback refill buffer, foreground gateway warmup, and connection timing diagnostics.
+- Direct simple answers during background research and agent identity sourced from the connected OpenClaw instead of a fixed Chime persona.
+
 - Automatic iPhone setup from an already-connected Watch, with manual fields tucked into Advanced connection.
 - Redesigned iPhone Memory page with a bubble empty state and readable memory cards; hide empty reset controls and remove the next-conversation settings note.
 

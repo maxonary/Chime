@@ -247,3 +247,42 @@ for (const owner of ["alice", "bob"]) test(`OpenClaw routing is restricted to au
     }
   } finally { await f.close(); }
 });
+
+test("a pending OpenClaw request does not block microphone audio or a simple spoken answer", async () => {
+  let resolveAgent!: (text: string) => void;
+  let didStart!: () => void;
+  const started = new Promise<void>(resolve => { didStart = resolve; });
+  const f = await fixture("test-key", 500, { userId: "alice", run: async () => {
+    didStart();
+    return new Promise<string>(resolve => { resolveAgent = resolve; });
+  }});
+  try {
+    const { client, next, remote, nextRemote } = await start(f);
+    remote.send(JSON.stringify({ type: "session.started" })); await next();
+    for (const event of [
+      { type: "response.created", response: { id: "research" } },
+      { type: "response.output_item.done", item: { type: "function_call", call_id: "lookup", name: "ask_openclaw", arguments: JSON.stringify({ request: "Look up my project status" }) } },
+      { type: "response.completed", response: { id: "research", output: [] } },
+    ]) remote.send(JSON.stringify({ type: "response.event", delegation_id: "background", event }));
+    await started;
+    client.send(JSON.stringify({ type: "session.input_audio.append", audio: "AAAAAA==" }));
+    assert.equal((await nextRemote()).type, "session.input_audio.append");
+    remote.send(JSON.stringify({ type: "session.output_transcript.delta", delta: "Four." }));
+    remote.send(JSON.stringify({ type: "session.output_audio.delta", delta: "AAAAAA==" }));
+    assert.equal((await next()).delta, "Four.");
+    assert.equal((await next()).type, "session.output_audio.delta");
+    resolveAgent("Project is ready");
+    assert.equal(JSON.parse((await nextRemote()).item.output).result, "Project is ready");
+    assert.equal((await nextRemote()).type, "response.create");
+  } finally { resolveAgent?.("Cancelled"); await f.close(); }
+});
+
+test("connected identity comes from OpenClaw and is never selected by an unauthenticated client field", () => {
+  const connected = sessionConfiguration({ agentName: "Spoofed", instructions: "You are Spoofed" }, "backend", true);
+  assert.ok(!connected.instructions.includes("You are Chime"));
+  assert.ok(!connected.instructions.includes("Spoofed"));
+  assert.match(connected.instructions, /identity reported by the connected agent/);
+  const standalone = sessionConfiguration({}, "backend", false);
+  assert.ok(!standalone.delegation.responses.tools.some((tool: any) => tool.name === "ask_openclaw"));
+  assert.ok(!standalone.instructions.includes("You are Chime"));
+});

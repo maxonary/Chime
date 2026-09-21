@@ -33,13 +33,18 @@ struct ContentView: View {
       if phase == .active {
         sessionManager.memoryStore.refresh()
         companion.start()
+        sessionManager.prepareConnection()
       }
     }
     .onOpenURL { navigation.open($0) }
     .onChange(of: companion.isConfigured) { wasConfigured, isConfigured in
-      if !wasConfigured && isConfigured { navigation.openBubble() }
+      if !wasConfigured && isConfigured {
+        navigation.openBubble()
+        sessionManager.prepareConnection()
+      }
     }
     .task {
+      sessionManager.prepareConnection()
       sessionManager.memoryStore.refresh()
       #if os(iOS)
       if AppSettings.load().userToken.isEmpty { navigation.page = 2 }

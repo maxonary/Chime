@@ -47,14 +47,28 @@ Chime ends a call when it enters the background. Muting keeps it connected; tap 
 bubble again to disconnect. Audio is streamed through the gateway and is not saved to
 files by Chime. OpenAI credentials remain on the server.
 
+On iPhone, Apple's voice processing provides echo cancellation, noise suppression,
+and automatic microphone gain. The microphone stays open during agent speech so you
+can interrupt or ask a simple question while research continues. GPT-Live decides
+when to speak; there is no app-level volume threshold that cuts off quiet speech.
+Playback uses a short 180 ms refill cushion to absorb network jitter. Opening the
+app checks gateway health to begin waking an idle server without starting a billed
+voice session. Free Render instances can still need a cold start after inactivity.
+
 The current Series 8 audio path takes turns: the microphone is silenced during the
 agent’s reply and a short acoustic tail to avoid echo. Spoken interruption is not yet
-supported. The tested device could not start the voice-processing audio unit, so Chime
+supported on Watch. The tested device could not start the voice-processing audio unit, so Chime
 uses ordinary audio I/O with asynchronous audio-session activation.
 
 See [Watch setup and interaction checks](watch/SETUP.md),
 [bubble artwork and motion](watch/ARTWORK.md), and
 [screenshot provenance](docs/images/README.md).
+
+When OpenClaw is connected, it supplies the agent's identity: Chime is the app,
+not a hardcoded assistant name. Identity questions are resolved through the
+connected agent, without adding an identity lookup to connection startup. Simple
+questions stay with GPT-Live while research runs asynchronously; dependent agent
+actions remain serialized and are never retried automatically.
 
 ## Run the gateway
 

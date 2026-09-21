@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import AVFoundation
+import OSLog
 
 @MainActor
 final class AgentSessionManager: ObservableObject {
@@ -24,7 +25,7 @@ final class AgentSessionManager: ObservableObject {
     case .idle: return "Ready when you are"
     case .connecting: return "Connecting…"
     case .ending: return "Ending conversation…"
-    case .live: return isMuted ? "Microphone muted" : isSpeaking ? "Chime is speaking" : "Listening to you"
+    case .live: return isMuted ? "Microphone muted" : isSpeaking ? "Assistant is speaking" : "Listening to you"
     }
   }
 
@@ -34,6 +35,11 @@ final class AgentSessionManager: ObservableObject {
   private var hasTap = false
   private var receiveTask: Task<Void, Never>?
   private var captureTask: Task<Void, Never>?
+  private var playbackStartTask: Task<Void, Never>?
+  private var warmupTask: Task<Void, Never>?
+  private var lastWarmup = Date.distantPast
+  private var connectionStartedAt = ProcessInfo.processInfo.systemUptime
+  private let logger = Logger(subsystem: "maxonary.chime", category: "Voice")
   private var timeoutTask: Task<Void, Never>?
   private var audioContinuation: AsyncStream<Data>.Continuation?
   private var generation = UUID()
@@ -60,6 +66,21 @@ final class AgentSessionManager: ObservableObject {
       }
   }
 
+  /// Wake a sleeping gateway when the app opens, without starting a billed voice session.
+  func prepareConnection() {
+    guard state == .idle, warmupTask == nil, Date().timeIntervalSince(lastWarmup) > 30 else { return }
+    let settings = AppSettings.load()
+    guard settings.hasConnection else { return }
+    lastWarmup = Date()
+    var request = URLRequest(url: settings.gatewayURL.appendingPathComponent("health"))
+    request.timeoutInterval = 60
+    request.cachePolicy = .reloadIgnoringLocalCacheData
+    warmupTask = Task { [weak self] in
+      _ = try? await URLSession.shared.data(for: request)
+      self?.warmupTask = nil
+    }
+  }
+
   func startListening() {
     audioDiagnostic("Start requested")
     guard state == .idle else { return }
@@ -76,6 +97,7 @@ final class AgentSessionManager: ObservableObject {
     transcriptGroups = [:]
     isMuted = false
     state = .connecting
+    connectionStartedAt = ProcessInfo.processInfo.systemUptime
     let id = UUID()
     generation = id
     receiveTask = Task { [weak self] in
@@ -85,6 +107,11 @@ final class AgentSessionManager: ObservableObject {
       }
       guard generation == id, state == .connecting, !Task.isCancelled else { return }
       guard allowed else { fail("Allow microphone access in Settings to talk to Chime."); return }
+      timeoutTask = Task { [weak self] in
+        try? await Task.sleep(for: .seconds(25))
+        guard !Task.isCancelled, let self, self.generation == id, self.state == .connecting else { return }
+        self.fail("Connection timed out. Check your connection and try again.")
+      }
       do {
         guard try await prepareAudio(generation: id) else { return }
       } catch {
@@ -107,15 +134,11 @@ final class AgentSessionManager: ObservableObject {
         let connection = URLSession.shared.webSocketTask(with: request)
         socket = connection
         connection.resume()
+        audioDiagnostic("Opening gateway connection")
         let history = memoryStore.recentHistory
         let conversation = conversationStore.createConversation(title: "Live conversation")
         conversationId = conversation.id
         memoryStore.activeConversationID = conversation.id
-        timeoutTask = Task { [weak self] in
-          try? await Task.sleep(for: .seconds(25))
-          guard !Task.isCancelled, let self, self.generation == id, self.state == .connecting else { return }
-          self.fail("Connection timed out. Check your gateway and try again.")
-        }
         let memory = memoryStore.content
         try await send(["type": "chime.session.start", "voice": settings.liveVoice ?? "marin", "research": settings.autoResearch,
                         "history": history, "memory": ["facts": memory.facts, "context": memory.context]], on: connection)
@@ -209,6 +232,7 @@ final class AgentSessionManager: ObservableObject {
     case "session.started":
       guard state == .connecting else { return }
       timeoutTask?.cancel()
+      audioDiagnostic("GPT Live ready")
       state = .live
       startedAt = Date()
       try startAudio(generation: id)
@@ -254,7 +278,8 @@ final class AgentSessionManager: ObservableObject {
     audioDiagnostic("Activating audio session")
     let activated = try await session.activate(options: [])
     #else
-    try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothHFP])
+    try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetoothHFP])
+    try? session.setPreferredIOBufferDuration(0.02)
     try session.setActive(true)
     let activated = true
     #endif
@@ -272,12 +297,18 @@ final class AgentSessionManager: ObservableObject {
     }
     #endif
     microphoneResumeAt = .distantPast
-    configureAudioEngine()
+    try configureAudioEngine()
     return true
   }
 
-  private func configureAudioEngine() {
+  private func configureAudioEngine() throws {
     let engine = AVAudioEngine()
+    #if os(iOS)
+    // iPhone speakerphone needs Apple's echo cancellation and noise suppression.
+    // Enable before reading formats or wiring the graph: processing changes I/O.
+    try engine.inputNode.setVoiceProcessingEnabled(true)
+    engine.inputNode.isVoiceProcessingAGCEnabled = true
+    #endif
     let player = AVAudioPlayerNode()
     engine.attach(player)
     // Player nodes render floating-point PCM; wire bytes are converted explicitly below.
@@ -287,9 +318,8 @@ final class AgentSessionManager: ObservableObject {
   }
 
   private func audioDiagnostic(_ message: String) {
-    #if DEBUG
-    NSLog("Chime audio: %@", message)
-    #endif
+    let elapsed = Int((ProcessInfo.processInfo.systemUptime - connectionStartedAt) * 1000)
+    logger.info("\(message, privacy: .public), elapsed=\(elapsed)ms")
   }
 
   private func startAudio(generation id: UUID) throws {
@@ -304,7 +334,12 @@ final class AgentSessionManager: ObservableObject {
     }
     let (stream, continuation) = AsyncStream<Data>.makeStream(bufferingPolicy: .bufferingOldest(8))
     audioContinuation = continuation
-    input.installTap(onBus: 0, bufferSize: 2048, format: sourceFormat) { buffer, _ in
+    #if os(iOS)
+    let captureFrames: AVAudioFrameCount = 1024
+    #else
+    let captureFrames: AVAudioFrameCount = 2048
+    #endif
+    input.installTap(onBus: 0, bufferSize: captureFrames, format: sourceFormat) { buffer, _ in
       if let data = LiveAudioCodec.encode(buffer, using: converter, to: targetFormat) {
         guard !data.isEmpty else { return }
         if case .dropped = continuation.yield(data) {
@@ -324,9 +359,14 @@ final class AgentSessionManager: ObservableObject {
         guard let self, self.generation == id, self.state == .live, !Task.isCancelled else { return }
         do {
           // Continue the audio clock with silence while the local microphone is muted.
-          // Without echo cancellation, take turns while the speaker is active
-          // (including its short acoustic tail) to avoid transcribing ourselves.
+          #if os(watchOS)
+          // The Series 8 cannot run voice processing reliably; retain its echo guard.
           let suppressEcho = (self.isSpeaking || Date() < self.microphoneResumeAt)
+          #else
+          // Echo-cancelled iPhone input stays open for interruptions and questions
+          // while the assistant speaks or the backend researches.
+          let suppressEcho = false
+          #endif
           let audio = self.isMuted || suppressEcho ? Data(count: bytes.count) : bytes
           self.inputLevel = self.isMuted || suppressEcho ? 0 : LiveAudioCodec.level(bytes)
           self.updateOutputLevel()
@@ -353,6 +393,12 @@ final class AgentSessionManager: ObservableObject {
     // Meter small slices against the player's sample clock, so animation follows
     // audible playback rather than the arrival time of network packets.
     let renderFrame = player.lastRenderTime.flatMap { player.playerTime(forNodeTime: $0) }?.sampleTime ?? 0
+    // Refill briefly after an underrun instead of playing each late packet alone.
+    // Pause preserves the player sample clock and already scheduled buffers.
+    if player.isPlaying, renderFrame >= scheduledOutputFrames {
+      player.pause()
+      audioDiagnostic("Playback buffer underrun; refilling")
+    }
     scheduledOutputFrames = max(scheduledOutputFrames, renderFrame)
     for offset in stride(from: 0, to: bytes.count, by: 1920) {
       let slice = bytes.subdata(in: offset..<min(offset + 1920, bytes.count))
@@ -374,7 +420,16 @@ final class AgentSessionManager: ObservableObject {
         self.isSpeaking = self.queuedSpeechBuffers > 0
       }
     }
-    if !player.isPlaying { player.play() }
+    if !player.isPlaying, playbackStartTask == nil {
+      playbackStartTask = Task { [weak self] in
+        // Output arrives in 100 ms chunks. A small cushion absorbs ordinary jitter
+        // without building a multi-second backlog or waiting for an audio-done event.
+        try? await Task.sleep(for: .milliseconds(180))
+        guard !Task.isCancelled, let self, self.generation == id, self.state == .live else { return }
+        self.playbackStartTask = nil
+        self.player?.play()
+      }
+    }
   }
 
   private func updateOutputLevel() {
@@ -390,6 +445,8 @@ final class AgentSessionManager: ObservableObject {
     audioContinuation = nil
     captureTask?.cancel()
     captureTask = nil
+    playbackStartTask?.cancel()
+    playbackStartTask = nil
     player?.stop()
     engine?.stop()
     player = nil
