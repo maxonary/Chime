@@ -82,7 +82,9 @@ access. Live voice does not need LiveKit, Anthropic, or Perplexity.
 
 ## Run the iPhone app and distribute with TestFlight
 
-<img src="docs/images/iphone-bubble.png" width="220" alt="The centered reflective Chime bubble on an iPhone">
+| Bubble · home | Connection · first launch |
+| :---: | :---: |
+| <img src="docs/images/iphone-bubble.png" width="220" alt="The centered reflective Chime bubble on an iPhone"> | <img src="docs/images/iphone-setup.png" width="220" alt="Chime connection setup and Watch pairing on iPhone"> |
 
 Select the shared **Chime** scheme in Xcode to run on an iPhone (iOS 26.5+).
 The app includes the Watch app and its widgets. Both use the same bubble, audio,
