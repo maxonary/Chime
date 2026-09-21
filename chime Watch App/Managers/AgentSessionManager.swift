@@ -2,6 +2,11 @@ import Foundation
 import Combine
 import AVFoundation
 import OSLog
+#if os(watchOS)
+import WatchKit
+#else
+import UIKit
+#endif
 
 @MainActor
 final class AgentSessionManager: ObservableObject {
@@ -9,6 +14,7 @@ final class AgentSessionManager: ObservableObject {
   @Published private(set) var state: State = .idle
   @Published private(set) var isMuted = false
   @Published private(set) var isSpeaking = false
+  @Published private(set) var isResearching = false
   @Published private(set) var inputLevel = 0.0
   @Published private(set) var outputLevel = 0.0
   @Published private(set) var currentResponse = ""
@@ -25,7 +31,7 @@ final class AgentSessionManager: ObservableObject {
     case .idle: return "Ready when you are"
     case .connecting: return "Connecting…"
     case .ending: return "Ending conversation…"
-    case .live: return isMuted ? "Microphone muted" : isSpeaking ? "Assistant is speaking" : "Listening to you"
+    case .live: return isMuted ? "Microphone muted" : isSpeaking ? "Assistant is speaking" : isResearching ? "Researching; you can keep talking" : "Listening to you"
     }
   }
 
@@ -233,9 +239,19 @@ final class AgentSessionManager: ObservableObject {
       guard state == .connecting else { return }
       timeoutTask?.cancel()
       audioDiagnostic("GPT Live ready")
+      try startAudio(generation: id)
       state = .live
       startedAt = Date()
-      try startAudio(generation: id)
+      // Signal readiness only after microphone capture successfully starts.
+      #if os(watchOS)
+      WKInterfaceDevice.current().play(.click)
+      #else
+      UIImpactFeedbackGenerator(style: .soft).impactOccurred(intensity: 0.4)
+      #endif
+    case "chime.research.state":
+      if state == .live, let active = event["active"] as? Int, (0...64).contains(active) {
+        isResearching = active > 0
+      }
     case "session.output_audio.delta":
       if state == .live, let delta = event["delta"] as? String { try play(delta, generation: id) }
     case "session.input_transcript.delta", "session.output_transcript.delta":
@@ -280,6 +296,7 @@ final class AgentSessionManager: ObservableObject {
     #else
     try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetoothHFP])
     try? session.setPreferredIOBufferDuration(0.02)
+    try? session.setAllowHapticsAndSystemSoundsDuringRecording(true)
     try session.setActive(true)
     let activated = true
     #endif
@@ -323,7 +340,9 @@ final class AgentSessionManager: ObservableObject {
   }
 
   private func startAudio(generation id: UUID) throws {
-    guard let engine, let socket else { return }
+    guard let engine, let socket else {
+      throw NSError(domain: "Chime", code: 4, userInfo: [NSLocalizedDescriptionKey: "Audio is not ready."])
+    }
     audioDiagnostic("Starting microphone capture")
     let input = engine.inputNode
     let sourceFormat = input.outputFormat(forBus: 0)
@@ -472,6 +491,7 @@ final class AgentSessionManager: ObservableObject {
   private func cleanup() {
     generation = UUID()
     state = .idle
+    isResearching = false
     stopAudio()
     timeoutTask?.cancel()
     timeoutTask = nil

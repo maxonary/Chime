@@ -3,7 +3,7 @@ import SwiftUI
 /// A photographic soap-film surface with live deformation and moving light.
 /// The image retains fine interference patterns that gradients cannot reproduce.
 struct SoapBubbleView: View {
-  enum Activity { case idle, connecting, listening, speaking, muted }
+  enum Activity { case idle, connecting, listening, speaking, researching, muted }
 
   let activity: Activity
   let microphoneActive: Bool
@@ -13,12 +13,15 @@ struct SoapBubbleView: View {
   @Environment(\.isLuminanceReduced) private var isLuminanceReduced
   @Environment(\.scenePhase) private var scenePhase
   @State private var origin = Date()
+  @State private var reflectionPhase = 0.0
+  @State private var reflectionChangedAt = Date()
 
   private var paused: Bool { reduceMotion || isLuminanceReduced || scenePhase != .active || !isVisible }
   private var strength: Double {
     switch activity {
     case .speaking: return 1
     case .listening: return 0.4
+    case .researching: return 0.55
     case .connecting: return 0.24
     case .idle: return 0.10
     case .muted: return 0.03
@@ -28,7 +31,13 @@ struct SoapBubbleView: View {
   var body: some View {
     TimelineView(.animation(minimumInterval: activity == .speaking ? 1.0 / 30 : 1.0 / 15, paused: paused)) { timeline in
       let time = paused ? 0 : timeline.date.timeIntervalSince(origin)
-      let ripple = sin(time * 3.2) * strength
+      let reflection = paused ? 0 : reflectionPhase + timeline.date.timeIntervalSince(reflectionChangedAt) * (activity == .researching ? 24 : 5)
+      // Listening gently breathes; speech ripples with audio; research turns light
+      // around the film without suggesting that microphone audio is playing.
+      let pace = activity == .listening ? 1.4 : activity == .researching ? 0.9 : 3.2
+      let ripple = sin(time * pace) * strength
+      let breath = activity == .listening ? sin(time * 1.4) * 0.012 : 0
+      let researchWarp = activity == .researching ? sin(time * 0.9) * 0.012 : 0
       let energy = paused ? 0 : min(1, max(0, audioLevel))
       GeometryReader { geometry in
         let side = min(geometry.size.width, geometry.size.height)
@@ -53,12 +62,12 @@ struct SoapBubbleView: View {
               ], center: .center), lineWidth: side * 0.018)
               .frame(width: side * 0.80, height: side * 0.80)
               .blur(radius: side * 0.01)
-              .rotationEffect(.degrees(time * 5 + ripple * 18))
+              .rotationEffect(.degrees(reflection + ripple * 18))
               .blendMode(.screen)
           }
           .frame(width: side, height: side)
-          .scaleEffect(x: 1 + ripple * energy * 0.025, y: 1 - ripple * energy * 0.02)
-          .scaleEffect(1 + energy * 0.085)
+          .scaleEffect(x: 1 + researchWarp + ripple * energy * 0.035, y: 1 - researchWarp + breath - ripple * energy * 0.025)
+          .scaleEffect(1 + breath + energy * (activity == .speaking ? 0.085 : 0.045))
           .animation(paused ? nil : .easeOut(duration: 0.12), value: energy)
           .scaleEffect(microphoneActive ? 1.10 : 0.68)
           .animation(paused ? nil : .easeInOut(duration: 0.35), value: microphoneActive)
@@ -73,6 +82,13 @@ struct SoapBubbleView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
       }
+    }
+    .onChange(of: activity) { previous, _ in
+      // Changing activity adjusts speed without snapping the reflection angle.
+      let now = Date()
+      reflectionPhase = (reflectionPhase + now.timeIntervalSince(reflectionChangedAt) * (previous == .researching ? 24 : 5))
+        .truncatingRemainder(dividingBy: 360)
+      reflectionChangedAt = now
     }
   }
 }

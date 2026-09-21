@@ -11,6 +11,7 @@ struct VoiceControlView: View {
     case .connecting, .ending: return .connecting
     case .live:
       if sessionManager.isSpeaking { return .speaking }
+      if sessionManager.isResearching { return .researching }
       return sessionManager.isMuted ? .muted : .listening
     }
   }
