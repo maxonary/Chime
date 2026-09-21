@@ -36,6 +36,7 @@ final class AgentSessionManager: ObservableObject {
   private var generation = UUID()
   private var queuedFrames = 0
   private var queuedSpeechBuffers = 0
+  private var microphoneResumeAt = Date.distantPast
   private var transcriptGroups: [MessageRole: (id: String, text: String, start: Double, end: Double)] = [:]
   private var conversationId: String?
   private var interruption: AnyCancellable?
@@ -51,6 +52,7 @@ final class AgentSessionManager: ObservableObject {
   }
 
   func startListening() {
+    audioDiagnostic("Start requested")
     guard state == .idle else { return }
     let settings = AppSettings.load()
     guard settings.gatewayURL.host != nil,
@@ -76,6 +78,14 @@ final class AgentSessionManager: ObservableObject {
       guard allowed else { fail("Allow microphone access in Watch Settings to talk to Chime."); return }
       do {
         guard try await prepareAudio(generation: id) else { return }
+      } catch {
+        if generation == id, state != .idle {
+          audioDiagnostic("Setup failed: \((error as NSError).domain) \((error as NSError).code)")
+          fail("Watch audio could not start (error \((error as NSError).code)). Please try again with Chime open.")
+        }
+        return
+      }
+      do {
         var components = URLComponents(url: settings.gatewayURL, resolvingAgainstBaseURL: false)!
         components.scheme = settings.gatewayURL.scheme == "https" ? "wss" : "ws"
         components.path = components.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
@@ -113,7 +123,15 @@ final class AgentSessionManager: ObservableObject {
         }
       } catch {
         if generation == id, state != .idle {
-          fail("\(error.localizedDescription) Check your gateway address, token, and connection.")
+          let failure = error as NSError
+          audioDiagnostic("Session failed: \(failure.domain) \(failure.code)")
+          if failure.domain.contains("audio") || failure.domain == NSOSStatusErrorDomain {
+            fail("The Watch could not run live audio (error \(failure.code)). Please try again with Chime open.")
+          } else if failure.domain == "Chime" {
+            fail(error.localizedDescription)
+          } else {
+            fail("\(error.localizedDescription) Check your gateway address, token, and connection.")
+          }
         }
       }
     }
@@ -215,10 +233,15 @@ final class AgentSessionManager: ObservableObject {
 
   private func prepareAudio(generation id: UUID) async throws -> Bool {
     let session = AVAudioSession.sharedInstance()
-    try session.setCategory(.playAndRecord, mode: .voiceChat)
+    audioDiagnostic("Configuring audio session")
+    // The voice-processing audio unit crashes the audio service on the tested
+    // Series 8. Use ordinary duplex I/O and suppress speaker echo below.
+    try session.setCategory(.playAndRecord, mode: .default)
     // Synchronous setActive succeeds on watchOS without enabling low-level
     // networking. Await watchOS audio activation before opening the WebSocket.
+    audioDiagnostic("Activating audio session")
     let activated = try await session.activate(options: [])
+    audioDiagnostic("Audio session activated: \(activated)")
     guard generation == id, state == .connecting, !Task.isCancelled else {
       // Activation may finish after Stop. Don't deactivate a newer session.
       if state == .idle {
@@ -229,19 +252,30 @@ final class AgentSessionManager: ObservableObject {
     guard activated else {
       throw NSError(domain: "Chime", code: 3, userInfo: [NSLocalizedDescriptionKey: "The Watch could not activate audio. Please try again."])
     }
+    microphoneResumeAt = .distantPast
+    configureAudioEngine()
+    return true
+  }
+
+  private func configureAudioEngine() {
     let engine = AVAudioEngine()
-    try engine.inputNode.setVoiceProcessingEnabled(true)
     let player = AVAudioPlayerNode()
     engine.attach(player)
     // Player nodes render floating-point PCM; wire bytes are converted explicitly below.
     engine.connect(player, to: engine.mainMixerNode, format: AVAudioFormat(standardFormatWithSampleRate: 24000, channels: 1)!)
     self.engine = engine
     self.player = player
-    return true
+  }
+
+  private func audioDiagnostic(_ message: String) {
+    #if DEBUG
+    NSLog("Chime audio: %@", message)
+    #endif
   }
 
   private func startAudio(generation id: UUID) throws {
     guard let engine, let socket else { return }
+    audioDiagnostic("Starting microphone capture")
     let input = engine.inputNode
     let sourceFormat = input.outputFormat(forBus: 0)
     guard sourceFormat.sampleRate > 0, sourceFormat.channelCount > 0,
@@ -261,14 +295,20 @@ final class AgentSessionManager: ObservableObject {
       } else { continuation.finish() }
     }
     hasTap = true
+    audioDiagnostic("Preparing audio engine")
     engine.prepare()
+    audioDiagnostic("Starting audio engine")
     try engine.start()
+    audioDiagnostic("Audio engine started")
     captureTask = Task { [weak self] in
       for await bytes in stream {
         guard let self, self.generation == id, self.state == .live, !Task.isCancelled else { return }
         do {
           // Continue the audio clock with silence while the local microphone is muted.
-          let audio = self.isMuted ? Data(count: bytes.count) : bytes
+          // Without echo cancellation, take turns while the speaker is active
+          // (including its short acoustic tail) to avoid transcribing ourselves.
+          let suppressEcho = (self.isSpeaking || Date() < self.microphoneResumeAt)
+          let audio = self.isMuted || suppressEcho ? Data(count: bytes.count) : bytes
           try await self.send(["type": "session.input_audio.append", "audio": audio.base64EncodedString()], on: socket)
         } catch {
           if self.generation == id { self.fail("Audio connection lost. Tap to reconnect.") }
@@ -291,6 +331,9 @@ final class AgentSessionManager: ObservableObject {
     let audible = UnsafeBufferPointer(start: buffer.floatChannelData![0], count: count).contains { abs($0) > 0.015 }
     queuedFrames += count
     if audible { queuedSpeechBuffers += 1 }
+    if audible {
+      microphoneResumeAt = Date().addingTimeInterval(Double(queuedFrames) / 24000 + 0.25)
+    }
     isSpeaking = queuedSpeechBuffers > 0
     player.scheduleBuffer(buffer, completionCallbackType: .dataPlayedBack) { [weak self] _ in
       Task { @MainActor [weak self] in

@@ -8,64 +8,39 @@ struct ContentView: View {
 
   var body: some View {
     NavigationStack {
-      ScrollView {
-        VStack(spacing: 6) {
-          HStack {
-            Text("CHIME")
-              .font(.system(size: 11, weight: .bold, design: .rounded))
-              .tracking(3)
-            Spacer()
-            HStack(spacing: 4) {
-              Circle().fill(sessionManager.isConnected ? Color.mint : Color.secondary).frame(width: 5, height: 5)
-              Text(sessionManager.isConnected ? "LIVE" : "GPT LIVE")
-                .font(.system(size: 9, weight: .semibold))
-            }
-            .foregroundStyle(.secondary)
-          }
+      GeometryReader { geometry in
+        ScrollView {
+          VStack(spacing: 16) {
+            VoiceControlView()
+              .frame(height: geometry.size.height)
 
-          VoiceControlView()
-
-          if sessionManager.isConnected, let start = sessionManager.startedAt {
-            Text(start, style: .timer)
-              .font(.caption2.monospacedDigit())
-              .foregroundStyle(.secondary)
-          }
-
-          HStack(spacing: 10) {
-            Button { showingTranscript = true } label: {
-              Image(systemName: "text.bubble")
-            }
-            .accessibilityLabel("Conversation transcript")
-            if sessionManager.isConnected {
-              Button { sessionManager.toggleMute() } label: {
-                Image(systemName: sessionManager.isMuted ? "mic.slash.fill" : "mic.fill")
-                  .foregroundStyle(sessionManager.isMuted ? Color.orange : Color.mint)
+            HStack(spacing: 10) {
+              Button { showingTranscript = true } label: {
+                Image(systemName: "text.bubble")
               }
-              .accessibilityLabel(sessionManager.isMuted ? "Unmute microphone" : "Mute microphone")
+              .accessibilityLabel("Conversation transcript")
+              if sessionManager.isConnected {
+                Button { sessionManager.toggleMute() } label: {
+                  Image(systemName: sessionManager.isMuted ? "mic.slash.fill" : "mic.fill")
+                    .foregroundStyle(sessionManager.isMuted ? Color.orange : Color.mint)
+                }
+                .accessibilityLabel(sessionManager.isMuted ? "Unmute microphone" : "Mute microphone")
+              }
+              Button { showingSettings = true } label: {
+                Image(systemName: "slider.horizontal.3")
+              }
+              .disabled(sessionManager.isListening)
+              .accessibilityLabel("Settings")
             }
-            Button { showingSettings = true } label: {
-              Image(systemName: "slider.horizontal.3")
-            }
-            .disabled(sessionManager.isListening)
-            .accessibilityLabel("Settings")
+            .buttonStyle(ConversationControlStyle())
+            .font(.caption)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 16)
           }
-          .buttonStyle(ConversationControlStyle())
-          .font(.caption)
-          if !sessionManager.currentResponse.isEmpty {
-            Text(sessionManager.currentResponse)
-              .font(.caption)
-              .lineLimit(3)
-              .frame(maxWidth: .infinity, alignment: .leading)
-              .padding(10)
-              .background(Color.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
-          }
-
-          Text("AI voice · GPT-Live")
-            .font(.system(size: 9))
-            .foregroundStyle(.tertiary)
         }
-        .padding(.horizontal, 8)
+        .scrollIndicators(.hidden)
       }
+      .ignoresSafeArea(.container, edges: .bottom)
       .containerBackground(.black, for: .navigation)
       .sheet(isPresented: $showingSettings) { SettingsView() }
       .sheet(isPresented: $showingTranscript) {

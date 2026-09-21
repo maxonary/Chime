@@ -1,9 +1,11 @@
 import SwiftUI
-import WatchKit
 
 struct VoiceControlView: View {
   @EnvironmentObject var sessionManager: AgentSessionManager
-  private var bubbleSize: CGFloat { WKInterfaceDevice.current().screenBounds.width < 180 ? 60 : 88 }
+  @Environment(\.scenePhase) private var scenePhase
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var showHint = false
+  @State private var hintGeneration = UUID()
 
   private var activity: SoapBubbleView.Activity {
     switch sessionManager.state {
@@ -16,29 +18,52 @@ struct VoiceControlView: View {
   }
 
   var body: some View {
-    VStack(spacing: 4) {
+    ZStack(alignment: .bottom) {
       Button {
+        resetHint()
         if sessionManager.isListening { sessionManager.stopListening() }
         else { sessionManager.startListening() }
       } label: {
-        SoapBubbleView(activity: activity)
-          .frame(width: bubbleSize, height: bubbleSize)
-          .frame(maxWidth: .infinity)
+        // The hit target is stable and independent of the moving artwork.
+        Rectangle().fill(.black)
+          .overlay {
+            SoapBubbleView(activity: activity)
+              .padding(4)
+              .padding(.bottom, 18)
+              .allowsHitTesting(false)
+          }
           .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
       .disabled(sessionManager.state == .ending)
+      .accessibilityElement(children: .ignore)
       .accessibilityLabel(sessionManager.isListening ? "End conversation" : "Start conversation")
       .accessibilityValue(sessionManager.statusText)
-      .accessibilityHint("Talk naturally with Chime")
+      .accessibilityHint("Double tap to talk naturally with the voice assistant")
 
-      VStack(spacing: 2) {
-        Text(sessionManager.state == .idle ? "Let’s talk" : sessionManager.statusText)
-          .font(.system(.headline, design: .rounded))
-        Text(sessionManager.state == .idle ? "Tap the bubble" : sessionManager.state == .ending ? "Saving your transcript" : "Tap to end")
-          .font(.caption2)
-          .foregroundStyle(.secondary)
-      }
+      // The reminder overlays the stage without changing its size or hit target.
+      Text("Tap the bubble")
+        .font(.caption2)
+        .foregroundStyle(.secondary)
+        .opacity(showHint && sessionManager.state == .idle ? 1 : 0)
+        .accessibilityHidden(!showHint || sessionManager.state != .idle)
+        .frame(height: 18)
+        .padding(.bottom, 10)
+        .allowsHitTesting(false)
     }
+    .task(id: hintGeneration) {
+      guard scenePhase == .active, sessionManager.state == .idle else { return }
+      do { try await Task.sleep(for: .seconds(10)) }
+      catch { return }
+      guard !Task.isCancelled, scenePhase == .active, sessionManager.state == .idle else { return }
+      withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.5)) { showHint = true }
+    }
+    .onChange(of: scenePhase) { _, _ in resetHint() }
+    .onChange(of: sessionManager.state) { _, _ in resetHint() }
+  }
+
+  private func resetHint() {
+    showHint = false
+    hintGeneration = UUID()
   }
 }

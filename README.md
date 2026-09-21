@@ -6,9 +6,9 @@ streaming audio to OpenAI while keeping the API key off the Watch.
 
 ## What’s included
 
-- A voice-first home screen with connection status, playback status, and elapsed time.
-- Continuous two-way audio using `gpt-live-1`, with mute and end controls.
-- Independent user and assistant captions, including overlapping speech.
+- A full-screen photographic soap bubble with moving reflections and distinct listening/speaking motion.
+- A reminder that appears after 10 idle seconds; scroll the Digital Crown for transcript, mute, and settings controls.
+- Streaming audio using `gpt-live-1`, with tap-to-start/end controls and independent user/assistant captions.
 - Locally saved transcripts and recent conversation context on reconnect.
 - Voice selection and optional web search through OpenAI Responses delegation.
 - Editable gateway settings, microphone permission handling, and connection errors.
@@ -16,6 +16,14 @@ streaming audio to OpenAI while keeping the API key off the Watch.
 The app ends its session when it enters the background. Mute leaves the session
 active; use End to disconnect. Audio is not saved to files by Chime. Transcripts
 are stored locally on the Watch and recent text is sent as context when reconnecting.
+
+The Watch currently takes turns: microphone input is silenced during the agent’s
+reply and its short acoustic tail, so speaking over the reply does not interrupt it.
+This prevents speaker echo without the voice-processing audio unit, which failed
+at startup on the tested Series 8. The audio session activates asynchronously
+before opening the WebSocket, as required for networking on that Watch.
+The bubble respects Reduce Motion and pauses animation on a dimmed or inactive display.
+See [artwork provenance and prompt](watch/ARTWORK.md).
 
 ## Run the gateway
 
@@ -46,14 +54,14 @@ access. Live voice does not need LiveKit, Anthropic, or Perplexity.
 1. Open `chime.xcodeproj` in Xcode. The project currently targets **watchOS 26.5+**.
 2. Select the **chime Watch App** scheme and your Watch or Watch simulator.
 3. Configure your development signing team for a physical device, then build and run.
-4. Open the sliders button in Chime. Set a reachable **Gateway URL** and the private
+4. Scroll down with the Digital Crown and open the sliders button. Set a reachable **Gateway URL** and the private
    Watch token from `GATEWAY_TOKENS`. Choose a voice and whether to enable web search.
-5. Tap **Let’s talk** and allow microphone access.
+5. Return to the bubble, tap it, and allow microphone access.
 
 Use HTTPS/WSS for a remote gateway, with WebSocket upgrades enabled. `localhost`
 on a physical Watch refers to the Watch itself, so use a reachable gateway hostname.
 The OpenAI API key goes only in the gateway environment, never in Watch settings.
-Verify duplex audio, echo behavior, interruptions, and Bluetooth routing on real
+Verify audio, echo behavior, interruptions, and Bluetooth routing on real
 hardware before distributing a build.
 
 ## Architecture
