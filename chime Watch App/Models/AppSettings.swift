@@ -19,6 +19,18 @@ struct AppSettings: Codable {
     self.lastActiveConversationId = lastActiveConversationId
   }
 
+  /// Merge a paired-device connection without replacing preferences or history.
+  mutating func setConnection(address: String, token: String) -> Bool {
+    let token = token.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard let url = URL(string: address.trimmingCharacters(in: .whitespacesAndNewlines)),
+          url.scheme == "https", let host = url.host, !host.isEmpty,
+          url.user == nil, url.password == nil, url.query == nil, url.fragment == nil,
+          !token.isEmpty else { return false }
+    gatewayURL = url
+    userToken = token
+    return true
+  }
+
   static func load(from defaults: UserDefaults = .standard) -> AppSettings {
     if let data = defaults.data(forKey: "appSettings"),
        let settings = try? JSONDecoder().decode(AppSettings.self, from: data) {

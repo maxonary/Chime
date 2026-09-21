@@ -1,8 +1,10 @@
 # Chime 🫧
 
+<img src="chime%20Watch%20App/Assets.xcassets/AppIcon.appiconset/chime-bubble.png" width="120" alt="Chime app icon: a detailed reflective soap bubble on black">
+
 **A quiet bubble. A conversation when you need one.**
 
-Chime puts a reflective soap bubble on your Apple Watch. Tap it to talk; tap again
+Chime puts a reflective soap bubble on your iPhone and Apple Watch. Tap it to talk; tap again
 to end the conversation. It grows when the microphone is enabled and pulses with
 your voice and the agent’s reply. Useful details become compact memory for next time.
 
@@ -30,7 +32,7 @@ Animation also pauses on a dimmed or inactive display and when the bubble is off
 
 ## Conversations that carry forward
 
-Memory is compiled automatically after calls and saved on the Watch before older
+Memory is compiled automatically after calls and saved on each device before older
 transcripts are pruned. The latest 12 turns remain for continuity; failed updates keep
 their source text for retry. The next voice session receives compact memory and bounded
 recent context. The memory page shows useful facts and ongoing context, with a confirmed
@@ -38,7 +40,7 @@ recent context. The memory page shows useful facts and ongoing context, with a c
 verbatim conversation history.
 
 Preferences offer voice selection and web search. Connection credentials are configured
-during installation, so there are no server addresses or tokens to type on the Watch.
+on the iPhone and sent to its paired Watch, so there are no server addresses or tokens to type on the Watch.
 This is app-managed memory, separate from ChatGPT account memory or cross-device cloud sync.
 
 Chime ends a call when it enters the background. Muting keeps it connected; tap the
@@ -77,6 +79,21 @@ LIVE_BACKEND_MODEL=gpt-5.6-luna
 Then run `npm start`. Check reachability with `curl http://localhost:8788/health`.
 The health endpoint checks the gateway process, not OpenAI credentials or model
 access. Live voice does not need LiveKit, Anthropic, or Perplexity.
+
+## Run the iPhone app and distribute with TestFlight
+
+<img src="docs/images/iphone-bubble.png" width="220" alt="The centered reflective Chime bubble on an iPhone">
+
+Select the shared **Chime** scheme in Xcode to run on an iPhone (iOS 26.5+).
+The app includes the Watch app and its widgets. Both use the same bubble, audio,
+preferences, and memory implementation. On a fresh phone install, Preferences
+opens for connection setup; enter your HTTPS gateway address and Chime service
+token once, then swipe right to the bubble. The paired Watch receives those
+connection settings through WatchConnectivity. Voice preferences and memory remain
+local to each device. No private service token or OpenAI key is bundled in a release.
+
+See [TestFlight release and installation](ios/TESTFLIGHT.md) for signing,
+archiving, uploads, and first-run setup.
 
 ## Run the Watch app
 

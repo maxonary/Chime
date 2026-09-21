@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Preferences only. Installation provisioning owns the gateway credentials.
+/// Voice preferences, with connection setup on the companion iPhone.
 struct SettingsView: View {
   @EnvironmentObject var sessionManager: AgentSessionManager
   @State private var voice = AppSettings.load().liveVoice ?? "marin"
@@ -8,6 +8,9 @@ struct SettingsView: View {
 
   var body: some View {
     Form {
+      #if os(iOS)
+      ConnectionSettingsView()
+      #endif
       Section("Preferences") {
         Picker("Voice", selection: $voice) {
           Text("Marin").tag("marin")

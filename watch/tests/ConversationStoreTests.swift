@@ -53,6 +53,19 @@ struct ConversationStoreTests {
     let migrated = AppSettings.load(from: defaults)
     precondition(migrated.userToken == "test-token" && !migrated.autoResearch)
     precondition(migrated.liveVoice == nil || migrated.liveVoice == "marin")
+    var connection = AppSettings(gatewayURL: URL(string: "https://old.example.com")!,
+                                 userToken: "old-token", autoResearch: false,
+                                 lastActiveConversationId: "keep-history")
+    connection.liveVoice = "willow"
+    for address in ["http://example.com", "https://user:secret@example.com", "https://example.com?token=secret", "https://example.com#secret", "not a URL"] {
+      precondition(!connection.setConnection(address: address, token: "replacement"))
+      precondition(connection.userToken == "old-token", "Invalid setup must preserve the working connection")
+    }
+    precondition(!connection.setConnection(address: "https://example.com", token: " \n"))
+    precondition(connection.setConnection(address: " https://example.com/voice ", token: " new-token\n"))
+    precondition(connection.gatewayURL.absoluteString == "https://example.com/voice" && connection.userToken == "new-token")
+    precondition(connection.liveVoice == "willow" && !connection.autoResearch && connection.lastActiveConversationId == "keep-history",
+                 "Pairing must not replace voice preferences or the local conversation pointer")
     let oldMessage = Data(#"{"id":"old","role":"user","content":"Old chat","timestamp":0}"#.utf8)
     let decodedMessage = try JSONDecoder().decode(Message.self, from: oldMessage)
     precondition(decodedMessage.transcriptStartMs == nil)

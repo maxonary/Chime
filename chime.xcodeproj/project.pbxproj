@@ -7,11 +7,30 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0213A872733D259A3BBDF6F4 /* LiveAudioCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34D42BC7C4F4259A2927A38A /* LiveAudioCodec.swift */; };
 		0449A72BD2E2E764A0B15A3D /* soap-bubble.png in Resources */ = {isa = PBXBuildFile; fileRef = 2F0A5E3ADF9EDCA4528985EC /* soap-bubble.png */; };
+		073729CF24A478FD0F52BCD7 /* CompanionConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5AC4486CAA1AF39BABA4B47 /* CompanionConnection.swift */; };
+		21D9848556ABF7D6E57A9787 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B616BD799EFB23CBDAF0A45 /* SettingsView.swift */; };
 		39636822301E349800CD562D /* chime Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 39636821301E349800CD562D /* chime Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		59627CBB8D80CAADD188BEEA /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = C662833D5E0BE9B2B7C15C8C /* Message.swift */; };
+		5F9B095FCBD81DF95AC80DE1 /* VoiceControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE745F5542B7439451A3D4AF /* VoiceControlView.swift */; };
+		6926598D7C5C7734B98885E9 /* MessageListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A03A13286D0CBD3F0DA5556 /* MessageListView.swift */; };
+		6CEA21DA98675D116FF6F7EC /* SharedAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C08B2512F9AA5C149C460F31 /* SharedAssets.xcassets */; };
+		7832D1537F240007DCF95E71 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E84C1AB1BEE191C70A6E4D /* AppSettings.swift */; };
 		7B1AA0D3A150AFC4C15214D0 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96E9F94EF49C1DBB63F8A15B /* Foundation.framework */; };
 		81BDB79D065A02B17F126934 /* ChimeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60CE7072C6547C6F3B7BEB48 /* ChimeWidget.swift */; };
+		8611C31B2E7AAEC6E18B7A20 /* ChimeNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EFAFC4174D6AB7DD6C657F9 /* ChimeNavigation.swift */; };
+		8D23B3ADBA6E4135C1A68CC3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83501427EA79C2F5577A111E /* ContentView.swift */; };
+		A0F0BD93822ACAD175D09FED /* ChimeShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACB63E8CC9DA0C1013DB61AE /* ChimeShortcuts.swift */; };
+		AD66938E6CA8F1C6976FD92D /* ConnectionSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79F022FB2B242B83B87DB84B /* ConnectionSettingsView.swift */; };
+		B6E043961CA81E329DAF7C39 /* AgentSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B7D145955BD2AA5D6F1ACD8 /* AgentSessionManager.swift */; };
+		C587EEA366BD0932EAC18551 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A680E2999047690004915530 /* Assets.xcassets */; };
+		CDEB14ABD2DD977A0270A633 /* chimeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B2E88A44183E431C0A62B2 /* chimeApp.swift */; };
+		D00DCFB3C6283F1DC5517BCD /* ConversationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E8C3C209C5332CF8D3B5D78 /* ConversationStore.swift */; };
+		D82BD1EB1F00FACB08C7E8F8 /* MemoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FD0A0C9D42F67078F4D6B3C /* MemoryStore.swift */; };
+		D98BA5BA46BA8EABB436E7DE /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F06A4149844E8B6BE12F00A1 /* PrivacyInfo.xcprivacy */; };
 		ED80738D3C9F49BE085F865E /* Chime Widgets.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 03321FEDF8462E4D150A7E18 /* Chime Widgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F456F0DDCBDFAE41AB6E2CE6 /* SoapBubbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84CCB358716D74A5AFF0E5E3 /* SoapBubbleView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -58,12 +77,31 @@
 
 /* Begin PBXFileReference section */
 		03321FEDF8462E4D150A7E18 /* Chime Widgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Chime Widgets.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		0B7D145955BD2AA5D6F1ACD8 /* AgentSessionManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AgentSessionManager.swift; path = "chime Watch App/Managers/AgentSessionManager.swift"; sourceTree = "<group>"; };
+		1B616BD799EFB23CBDAF0A45 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SettingsView.swift; path = "chime Watch App/Views/SettingsView.swift"; sourceTree = "<group>"; };
+		1EFAFC4174D6AB7DD6C657F9 /* ChimeNavigation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ChimeNavigation.swift; path = "chime Watch App/Models/ChimeNavigation.swift"; sourceTree = "<group>"; };
+		2A03A13286D0CBD3F0DA5556 /* MessageListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MessageListView.swift; path = "chime Watch App/Views/MessageListView.swift"; sourceTree = "<group>"; };
 		2F0A5E3ADF9EDCA4528985EC /* soap-bubble.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; name = "soap-bubble.png"; path = "chime Watch App/Assets.xcassets/SoapBubble.imageset/soap-bubble.png"; sourceTree = "<group>"; };
+		34D42BC7C4F4259A2927A38A /* LiveAudioCodec.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = LiveAudioCodec.swift; path = "chime Watch App/Managers/LiveAudioCodec.swift"; sourceTree = "<group>"; };
 		3963681B301E349800CD562D /* chime.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = chime.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		39636821301E349800CD562D /* chime Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "chime Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3E8C3C209C5332CF8D3B5D78 /* ConversationStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ConversationStore.swift; path = "chime Watch App/Managers/ConversationStore.swift"; sourceTree = "<group>"; };
+		4FD0A0C9D42F67078F4D6B3C /* MemoryStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MemoryStore.swift; path = "chime Watch App/Managers/MemoryStore.swift"; sourceTree = "<group>"; };
+		50B2E88A44183E431C0A62B2 /* chimeApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = chimeApp.swift; path = "chime Watch App/chimeApp.swift"; sourceTree = "<group>"; };
 		60CE7072C6547C6F3B7BEB48 /* ChimeWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ChimeWidget.swift; sourceTree = "<group>"; };
 		7758F76DC33CED0B71B14612 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		79F022FB2B242B83B87DB84B /* ConnectionSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ConnectionSettingsView.swift; path = "chime Watch App/Views/ConnectionSettingsView.swift"; sourceTree = "<group>"; };
+		83501427EA79C2F5577A111E /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ContentView.swift; path = "chime Watch App/Views/ContentView.swift"; sourceTree = "<group>"; };
+		84CCB358716D74A5AFF0E5E3 /* SoapBubbleView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SoapBubbleView.swift; path = "chime Watch App/Views/SoapBubbleView.swift"; sourceTree = "<group>"; };
 		96E9F94EF49C1DBB63F8A15B /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		A5AC4486CAA1AF39BABA4B47 /* CompanionConnection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CompanionConnection.swift; path = "chime Watch App/Managers/CompanionConnection.swift"; sourceTree = "<group>"; };
+		A680E2999047690004915530 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = ios/Assets.xcassets; sourceTree = "<group>"; };
+		A9E84C1AB1BEE191C70A6E4D /* AppSettings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AppSettings.swift; path = "chime Watch App/Models/AppSettings.swift"; sourceTree = "<group>"; };
+		ACB63E8CC9DA0C1013DB61AE /* ChimeShortcuts.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ChimeShortcuts.swift; path = "chime Watch App/ChimeShortcuts.swift"; sourceTree = "<group>"; };
+		C08B2512F9AA5C149C460F31 /* SharedAssets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; name = SharedAssets.xcassets; path = ios/SharedAssets.xcassets; sourceTree = "<group>"; };
+		C662833D5E0BE9B2B7C15C8C /* Message.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Message.swift; path = "chime Watch App/Models/Message.swift"; sourceTree = "<group>"; };
+		DE745F5542B7439451A3D4AF /* VoiceControlView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VoiceControlView.swift; path = "chime Watch App/Views/VoiceControlView.swift"; sourceTree = "<group>"; };
+		F06A4149844E8B6BE12F00A1 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = "chime Watch App/PrivacyInfo.xcprivacy"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -119,6 +157,8 @@
 				0F9A41791FF19766B3F6F998 /* Frameworks */,
 				5FA9A5E033344EE5AF8C92DC /* Chime Widgets */,
 				2F0A5E3ADF9EDCA4528985EC /* soap-bubble.png */,
+				9F991EEF6A56957CE735639E /* Shared iPhone Sources */,
+				C08B2512F9AA5C149C460F31 /* SharedAssets.xcassets */,
 			);
 			sourceTree = "<group>";
 		};
@@ -142,6 +182,31 @@
 			path = "Chime Widgets";
 			sourceTree = "<group>";
 		};
+		9F991EEF6A56957CE735639E /* Shared iPhone Sources */ = {
+			isa = PBXGroup;
+			children = (
+				ACB63E8CC9DA0C1013DB61AE /* ChimeShortcuts.swift */,
+				0B7D145955BD2AA5D6F1ACD8 /* AgentSessionManager.swift */,
+				A5AC4486CAA1AF39BABA4B47 /* CompanionConnection.swift */,
+				3E8C3C209C5332CF8D3B5D78 /* ConversationStore.swift */,
+				34D42BC7C4F4259A2927A38A /* LiveAudioCodec.swift */,
+				4FD0A0C9D42F67078F4D6B3C /* MemoryStore.swift */,
+				A9E84C1AB1BEE191C70A6E4D /* AppSettings.swift */,
+				1EFAFC4174D6AB7DD6C657F9 /* ChimeNavigation.swift */,
+				C662833D5E0BE9B2B7C15C8C /* Message.swift */,
+				79F022FB2B242B83B87DB84B /* ConnectionSettingsView.swift */,
+				83501427EA79C2F5577A111E /* ContentView.swift */,
+				2A03A13286D0CBD3F0DA5556 /* MessageListView.swift */,
+				1B616BD799EFB23CBDAF0A45 /* SettingsView.swift */,
+				84CCB358716D74A5AFF0E5E3 /* SoapBubbleView.swift */,
+				DE745F5542B7439451A3D4AF /* VoiceControlView.swift */,
+				50B2E88A44183E431C0A62B2 /* chimeApp.swift */,
+				A680E2999047690004915530 /* Assets.xcassets */,
+				F06A4149844E8B6BE12F00A1 /* PrivacyInfo.xcprivacy */,
+			);
+			name = "Shared iPhone Sources";
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -151,6 +216,7 @@
 			buildPhases = (
 				39636819301E349800CD562D /* Resources */,
 				39636831301E349900CD562D /* Embed Watch Content */,
+				A6DB26D4240595DF45D23D5D /* Sources */,
 			);
 			buildRules = (
 			);
@@ -160,7 +226,7 @@
 			name = chime;
 			productName = chime;
 			productReference = 3963681B301E349800CD562D /* chime.app */;
-			productType = "com.apple.product-type.application.watchapp2-container";
+			productType = "com.apple.product-type.application";
 		};
 		39636820301E349800CD562D /* chime Watch App */ = {
 			isa = PBXNativeTarget;
@@ -245,6 +311,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C587EEA366BD0932EAC18551 /* Assets.xcassets in Resources */,
+				6CEA21DA98675D116FF6F7EC /* SharedAssets.xcassets in Resources */,
+				D98BA5BA46BA8EABB436E7DE /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -278,6 +347,29 @@
 			buildActionMask = 2147483647;
 			files = (
 				81BDB79D065A02B17F126934 /* ChimeWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A6DB26D4240595DF45D23D5D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A0F0BD93822ACAD175D09FED /* ChimeShortcuts.swift in Sources */,
+				B6E043961CA81E329DAF7C39 /* AgentSessionManager.swift in Sources */,
+				073729CF24A478FD0F52BCD7 /* CompanionConnection.swift in Sources */,
+				D00DCFB3C6283F1DC5517BCD /* ConversationStore.swift in Sources */,
+				0213A872733D259A3BBDF6F4 /* LiveAudioCodec.swift in Sources */,
+				D82BD1EB1F00FACB08C7E8F8 /* MemoryStore.swift in Sources */,
+				7832D1537F240007DCF95E71 /* AppSettings.swift in Sources */,
+				8611C31B2E7AAEC6E18B7A20 /* ChimeNavigation.swift in Sources */,
+				59627CBB8D80CAADD188BEEA /* Message.swift in Sources */,
+				AD66938E6CA8F1C6976FD92D /* ConnectionSettingsView.swift in Sources */,
+				8D23B3ADBA6E4135C1A68CC3 /* ContentView.swift in Sources */,
+				6926598D7C5C7734B98885E9 /* MessageListView.swift in Sources */,
+				21D9848556ABF7D6E57A9787 /* SettingsView.swift in Sources */,
+				F456F0DDCBDFAE41AB6E2CE6 /* SoapBubbleView.swift in Sources */,
+				5F9B095FCBD81DF95AC80DE1 /* VoiceControlView.swift in Sources */,
+				CDEB14ABD2DD977A0270A633 /* chimeApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -428,7 +520,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = chime;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Chime uses your microphone for live voice conversations.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKWatchOnly = YES;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = maxonary.chime;
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -463,7 +556,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = chime;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Chime uses your microphone for live voice conversations.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKWatchOnly = YES;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = maxonary.chime;
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -488,36 +582,64 @@
 		39636833301E349900CD562D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = Q37KAF726J;
-				INFOPLIST_KEY_CFBundleDisplayName = chime;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "watch/Chime-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Chime;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Chime uses your microphone for live voice conversations.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = maxonary.chime;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
 		39636834301E349900CD562D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = Q37KAF726J;
-				INFOPLIST_KEY_CFBundleDisplayName = chime;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "watch/Chime-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Chime;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Chime uses your microphone for live voice conversations.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = maxonary.chime;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;

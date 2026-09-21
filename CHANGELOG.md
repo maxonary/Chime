@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased — Chime 🫧
 
+- Native iPhone voice app sharing the bubble interface, memory, and shortcuts with Watch; paired Watch connection setup from iPhone and a shared TestFlight archive scheme.
+
+- Detailed soap bubble app icon matching the voice screen and widgets; removed obsolete logo assets.
+
 - Bubble launchers for Watch face complications and Smart Stack, plus an Open Chime Siri/Shortcuts action.
 
 - Optional OpenClaw voice delegation with server-only credentials, per-user access, and Cloudflare service authentication.

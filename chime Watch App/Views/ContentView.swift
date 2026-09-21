@@ -32,7 +32,12 @@ struct ContentView: View {
       if phase == .active { sessionManager.memoryStore.refresh() }
     }
     .onOpenURL { navigation.open($0) }
-    .task { sessionManager.memoryStore.refresh() }
+    .task {
+      sessionManager.memoryStore.refresh()
+      #if os(iOS)
+      if AppSettings.load().userToken.isEmpty { navigation.page = 2 }
+      #endif
+    }
   }
 }
 

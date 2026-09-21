@@ -1,10 +1,10 @@
 {
   "images": [
     {
+      "filename": "chime-bubble.png",
       "idiom": "universal",
-      "platform": "watchos",
-      "size": "1024x1024",
-      "filename": "chime-bubble.png"
+      "platform": "ios",
+      "size": "1024x1024"
     }
   ],
   "info": {

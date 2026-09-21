@@ -36,12 +36,14 @@ struct VoiceControlView: View {
     .disabled(sessionManager.state == .ending)
     // Consume Crown input on the center page without scrolling, zooming, or
     // changing pages. The side pages retain their normal Crown behavior.
+    #if os(watchOS)
     .focusable(isVisible)
     .focused($ownsCrown)
     .focusEffectDisabled()
     .digitalCrownRotation(.constant(0), from: 0, through: 1, isContinuous: true, isHapticFeedbackEnabled: false)
     .onAppear { ownsCrown = isVisible }
     .onChange(of: isVisible) { _, visible in ownsCrown = visible }
+    #endif
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(sessionManager.isListening ? "End conversation" : "Start conversation")
     .accessibilityValue(sessionManager.statusText)

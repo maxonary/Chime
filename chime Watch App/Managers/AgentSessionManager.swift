@@ -67,7 +67,7 @@ final class AgentSessionManager: ObservableObject {
     guard settings.gatewayURL.host != nil,
           ["http", "https"].contains(settings.gatewayURL.scheme ?? ""),
           !settings.userToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-      error = "This installation has not been connected to your voice service yet. Reinstall using the configured Watch installer."
+      error = "This installation has not been connected to your voice service yet. Open Chime on your iPhone and connect in Preferences."
       return
     }
     error = nil
@@ -84,13 +84,13 @@ final class AgentSessionManager: ObservableObject {
         AVAudioApplication.requestRecordPermission { continuation.resume(returning: $0) }
       }
       guard generation == id, state == .connecting, !Task.isCancelled else { return }
-      guard allowed else { fail("Allow microphone access in Watch Settings to talk to Chime."); return }
+      guard allowed else { fail("Allow microphone access in Settings to talk to Chime."); return }
       do {
         guard try await prepareAudio(generation: id) else { return }
       } catch {
         if generation == id, state != .idle {
           audioDiagnostic("Setup failed: \((error as NSError).domain) \((error as NSError).code)")
-          fail("Watch audio could not start (error \((error as NSError).code)). Please try again with Chime open.")
+          fail("Audio could not start (error \((error as NSError).code)). Please try again with Chime open.")
         }
         return
       }
@@ -247,11 +247,17 @@ final class AgentSessionManager: ObservableObject {
     audioDiagnostic("Configuring audio session")
     // The voice-processing audio unit crashes the audio service on the tested
     // Series 8. Use ordinary duplex I/O and suppress speaker echo below.
+    #if os(watchOS)
     try session.setCategory(.playAndRecord, mode: .default)
     // Synchronous setActive succeeds on watchOS without enabling low-level
     // networking. Await watchOS audio activation before opening the WebSocket.
     audioDiagnostic("Activating audio session")
     let activated = try await session.activate(options: [])
+    #else
+    try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothHFP])
+    try session.setActive(true)
+    let activated = true
+    #endif
     audioDiagnostic("Audio session activated: \(activated)")
     guard generation == id, state == .connecting, !Task.isCancelled else {
       // Activation may finish after Stop. Don't deactivate a newer session.
@@ -260,9 +266,11 @@ final class AgentSessionManager: ObservableObject {
       }
       return false
     }
+    #if os(watchOS)
     guard activated else {
-      throw NSError(domain: "Chime", code: 3, userInfo: [NSLocalizedDescriptionKey: "The Watch could not activate audio. Please try again."])
+      throw NSError(domain: "Chime", code: 3, userInfo: [NSLocalizedDescriptionKey: "Could not activate audio. Please try again."])
     }
+    #endif
     microphoneResumeAt = .distantPast
     configureAudioEngine()
     return true

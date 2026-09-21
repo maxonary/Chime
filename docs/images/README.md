@@ -13,3 +13,6 @@ Refresh all three captures when their appearance or navigation changes.
 
 The bubble surface itself uses generated artwork; its full prompt and provenance are in
 [watch/ARTWORK.md](../../watch/ARTWORK.md).
+
+`iphone-bubble.png` is a direct iPhone 17 Pro / iOS 26.5 simulator capture of
+the iPhone version's idle bubble. It contains no personal conversation data.
