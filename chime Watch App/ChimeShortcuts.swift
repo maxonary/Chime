@@ -2,12 +2,12 @@ import AppIntents
 
 struct OpenChimeIntent: AppIntent {
   static let title: LocalizedStringResource = "Open Chime"
-  static let description = IntentDescription("Open the bubble, ready for a voice conversation.")
+  static let description = IntentDescription("Open Chime and start a voice conversation.")
   static var supportedModes: IntentModes { .foreground }
 
   @MainActor
   func perform() async throws -> some IntentResult {
-    ChimeNavigation.shared.openBubble()
+    ChimeNavigation.shared.openConversation()
     return .result()
   }
 }

@@ -29,18 +29,37 @@ struct ContentView: View {
       Text(sessionManager.error ?? "Please try again.")
     }
     .onChange(of: scenePhase) { _, phase in
-      if phase == .background { sessionManager.stopListening() }
+      if phase == .background {
+        navigation.requestConversation()
+        #if os(watchOS)
+        // An already-started conversation owns background audio. Wrist-down must
+        // not end it; unfinished setup still requires the foreground.
+        if sessionManager.state == .connecting {
+          sessionManager.stopListening(reason: "App entered background during setup")
+        }
+        #else
+        sessionManager.stopListening(reason: "App entered background")
+        #endif
+      }
       if phase == .active {
         sessionManager.memoryStore.refresh()
         companion.start()
         sessionManager.prepareConnection()
+        startRequestedConversation()
       }
+    }
+    .onChange(of: navigation.wantsConversation) { _, requested in
+      if requested { startRequestedConversation() }
+    }
+    .onChange(of: sessionManager.state) { _, state in
+      if state == .idle { startRequestedConversation() }
     }
     .onOpenURL { navigation.open($0) }
     .onChange(of: companion.isConfigured) { wasConfigured, isConfigured in
       if !wasConfigured && isConfigured {
         navigation.openBubble()
         sessionManager.prepareConnection()
+        startRequestedConversation()
       }
     }
     .task {
@@ -51,9 +70,25 @@ struct ContentView: View {
       #endif
       #if DEBUG
       // Repeatable simulator screenshots without a live voice connection.
-      if ProcessInfo.processInfo.arguments.contains("--preview-memory") { navigation.page = 0 }
+      if ProcessInfo.processInfo.arguments.contains("--preview-memory") { navigation.page = 0; return }
       #endif
+      startRequestedConversation()
     }
+  }
+
+  private func startRequestedConversation() {
+    #if DEBUG
+    guard !ProcessInfo.processInfo.arguments.contains("--preview-memory") else { return }
+    #endif
+    guard navigation.consumeConversationRequest(
+      isActive: scenePhase == .active,
+      isConfigured: AppSettings.load().hasConnection,
+      isEnding: sessionManager.state == .ending
+    ) else { return }
+    navigation.openBubble()
+    // Never replace an active call or automatically retry a failed connection.
+    guard sessionManager.state == .idle, sessionManager.error == nil else { return }
+    sessionManager.startListening()
   }
 }
 

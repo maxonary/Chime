@@ -74,7 +74,7 @@ private struct BubbleWidgetView: View {
           BubbleMark(large: true).frame(width: 54, height: 54)
           VStack(alignment: .leading, spacing: 2) {
             Text("Chime").font(.headline)
-            Text("Open the bubble").font(.caption).foregroundStyle(.secondary)
+            Text("Start talking").font(.caption).foregroundStyle(.secondary)
           }
           .minimumScaleFactor(0.8)
           .frame(maxWidth: .infinity, alignment: .leading)
@@ -90,7 +90,7 @@ private struct BubbleWidgetView: View {
     .widgetURL(URL(string: "chime://bubble")!)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel("Open Chime")
-    .accessibilityHint("Opens the bubble for a voice conversation")
+    .accessibilityHint("Opens Chime and starts a voice conversation")
   }
 }
 
@@ -103,7 +103,7 @@ struct ChimeWidget: Widget {
       BubbleWidgetView()
     }
     .configurationDisplayName("Chime")
-    .description("Your bubble, one tap away. Open Chime for a voice conversation.")
+    .description("Your bubble, one tap away. Open Chime and start talking.")
     .supportedFamilies([.accessoryCircular, .accessoryRectangular, .accessoryInline, .accessoryCorner])
   }
 }

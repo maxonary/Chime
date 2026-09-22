@@ -68,7 +68,7 @@ final class AgentSessionManager: ObservableObject {
       .sink { [weak self] notification in
         guard let kind = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
               kind == AVAudioSession.InterruptionType.began.rawValue else { return }
-        Task { @MainActor in self?.stopListening() }
+        Task { @MainActor in self?.stopListening(reason: "Audio interruption") }
       }
   }
 
@@ -121,7 +121,7 @@ final class AgentSessionManager: ObservableObject {
       do {
         guard try await prepareAudio(generation: id) else { return }
       } catch {
-        if generation == id, state != .idle {
+        if generation == id, state == .connecting, !Task.isCancelled {
           audioDiagnostic("Setup failed: \((error as NSError).domain) \((error as NSError).code)")
           fail("Audio could not start (error \((error as NSError).code)). Please try again with Chime open.")
         }
@@ -136,6 +136,7 @@ final class AgentSessionManager: ObservableObject {
         components.fragment = nil
         guard let url = components.url else { fail("The gateway address is invalid."); return }
         var request = URLRequest(url: url)
+        request.networkServiceType = .avStreaming
         request.setValue("Bearer \(settings.userToken)", forHTTPHeaderField: "Authorization")
         let connection = URLSession.shared.webSocketTask(with: request)
         socket = connection
@@ -161,23 +162,30 @@ final class AgentSessionManager: ObservableObject {
           try handle(data, generation: id)
         }
       } catch {
-        if generation == id, state != .idle {
+        guard generation == id, !Task.isCancelled, state != .idle else { return }
+        if state == .ending {
+          audioDiagnostic("Connection closed while ending the call")
+          cleanup()
+          return
+        }
+        if state == .connecting || state == .live {
           let failure = error as NSError
-          audioDiagnostic("Session failed: \(failure.domain) \(failure.code)")
+          audioDiagnostic("Session failed: \(failure.domain) \(failure.code), close=\(socket?.closeCode.rawValue ?? 0), HTTP=\((socket?.response as? HTTPURLResponse)?.statusCode ?? 0)")
           if failure.domain.contains("audio") || failure.domain == NSOSStatusErrorDomain {
             fail("The Watch could not run live audio (error \(failure.code)). Please try again with Chime open.")
           } else if failure.domain == "Chime" {
             fail(error.localizedDescription)
           } else {
-            fail("\(error.localizedDescription) Check your gateway address, token, and connection.")
+            fail(LiveSocket.message(for: error, httpStatus: (socket?.response as? HTTPURLResponse)?.statusCode))
           }
         }
       }
     }
   }
 
-  func stopListening() {
+  func stopListening(reason: String = "User ended call") {
     guard state != .idle, state != .ending else { return }
+    audioDiagnostic(reason)
     let wasLive = state == .live
     state = .ending
     // watchOS grants WebSocket access through the active audio session. Keep it
@@ -193,7 +201,8 @@ final class AgentSessionManager: ObservableObject {
     timeoutTask = Task { [weak self] in
       try? await Task.sleep(for: .seconds(17))
       guard !Task.isCancelled, let self, self.generation == id else { return }
-      self.fail("Conversation ended before final usage was confirmed.")
+      self.audioDiagnostic("Closing timed out before final usage was confirmed")
+      self.cleanup()
     }
   }
 
@@ -223,13 +232,13 @@ final class AgentSessionManager: ObservableObject {
     let id = generation
     Task {
       do { try await send(["type": muted ? "session.input_audio.mute" : "session.input_audio.unmute"], on: socket) }
-      catch { if generation == id { fail("Could not change microphone state. Please reconnect.") } }
+      catch { if generation == id, state == .live, !Task.isCancelled { fail("Could not change microphone state. Please reconnect.") } }
     }
   }
 
   private func send(_ event: [String: Any], on socket: URLSessionWebSocketTask) async throws {
     let data = try JSONSerialization.data(withJSONObject: event)
-    try await socket.send(.string(String(decoding: data, as: UTF8.self)))
+    try await LiveSocket.send(.string(String(decoding: data, as: UTF8.self)), on: socket)
   }
 
   private func handle(_ data: Data, generation id: UUID) throws {
@@ -261,6 +270,7 @@ final class AgentSessionManager: ObservableObject {
       }
     case "session.closed": cleanup()
     case "error":
+      if state == .ending { cleanup(); return }
       let details = event["error"] as? [String: Any]
       fail(details?["message"] as? String ?? "The voice connection failed. Try again.")
     default: break
@@ -391,11 +401,14 @@ final class AgentSessionManager: ObservableObject {
           self.updateOutputLevel()
           try await self.send(["type": "session.input_audio.append", "audio": audio.base64EncodedString()], on: socket)
         } catch {
-          if self.generation == id { self.fail("Audio connection lost. Tap to reconnect.") }
+          guard self.generation == id, self.state == .live, !Task.isCancelled else { return }
+          let failure = error as NSError
+          self.audioDiagnostic("Audio send failed: \(failure.domain) \(failure.code), close=\(socket.closeCode.rawValue)")
+          self.fail(LiveSocket.message(for: error, httpStatus: (socket.response as? HTTPURLResponse)?.statusCode))
           return
         }
       }
-      if let self, self.generation == id, self.state == .live {
+      if let self, self.generation == id, self.state == .live, !Task.isCancelled {
         self.fail("Audio could not keep up with this connection. Please reconnect.")
       }
     }

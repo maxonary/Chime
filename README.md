@@ -4,8 +4,8 @@
 
 **A quiet bubble. A conversation when you need one.**
 
-Chime puts a reflective soap bubble on your iPhone and Apple Watch. Tap it to talk; tap again
-to end the conversation. It grows when the microphone is enabled and pulses with
+Chime puts a reflective soap bubble on your iPhone and Apple Watch. Open Chime to start
+talking; tap the bubble to end the conversation. It grows when the microphone is enabled and pulses with
 your voice and the agent’s reply. Useful details become compact memory for next time.
 
 ## On your wrist
@@ -43,7 +43,8 @@ Preferences offer voice selection and web search. Connection credentials are con
 on the iPhone and sent to its paired Watch, so there are no server addresses or tokens to type on the Watch.
 This is app-managed memory, separate from ChatGPT account memory or cross-device cloud sync.
 
-Chime ends a call when it enters the background. Muting keeps it connected; tap the
+An active Watch call continues when the display dims or the app enters the background.
+The iPhone app ends its call when it enters the background. Muting keeps it connected; tap the
 bubble again to disconnect. Audio is streamed through the gateway and is not saved to
 files by Chime. OpenAI credentials remain on the server.
 
@@ -51,9 +52,9 @@ On iPhone, Apple's voice processing provides echo cancellation, noise suppressio
 and automatic microphone gain. The microphone stays open during agent speech so you
 can interrupt or ask a simple question while research continues. GPT-Live decides
 when to speak; there is no app-level volume threshold that cuts off quiet speech.
-Playback uses a short 180 ms refill cushion to absorb network jitter. Opening the
-app checks gateway health to begin waking an idle server without starting a billed
-voice session. Free Render instances can still need a cold start after inactivity.
+Playback uses a short 180 ms refill cushion to absorb network jitter. Opening the configured
+app starts a voice session automatically once active; the microphone permission prompt still
+appears on first use. Free Render instances can still need a cold start after inactivity.
 
 The current Series 8 audio path takes turns: the microphone is silenced during the
 agent’s reply and a short acoustic tail to avoid echo. Spoken interruption is not yet
@@ -134,7 +135,7 @@ archiving, uploads, and first-run setup.
    Use `--fresh` on the first installation if no preferences file exists. The installer merges
    credentials into device preferences without embedding them in the bundle, preserving voice
    preferences and memory. This personal development workflow is not public account enrollment.
-4. Tap the bubble and allow microphone access. Swipe left for preferences or right for memory;
+4. Open Chime and allow microphone access; voice starts automatically. Swipe left for preferences or right for memory;
    no connection fields need to be entered on the Watch.
 
 Use HTTPS/WSS for a remote gateway, with WebSocket upgrades enabled. `localhost`
@@ -193,7 +194,7 @@ in Xcode and test a live conversation with configured credentials on hardware.
 
 Add **Chime** to your Watch face's complications or pin its bubble widget in the
 Smart Stack. You can also say **“Open Chime”** to Siri on the Watch or use its
-Shortcuts action. Each opens the bubble; tap it to begin listening.
+Shortcuts action. Each opens the bubble and starts listening once Chime is active and configured.
 See [quick-access setup](watch/SETUP.md#quick-access-from-your-wrist) for instructions.
 
 <img src="docs/images/smart-stack.png" width="200" alt="Chime soap bubble launcher in the Apple Watch Smart Stack">

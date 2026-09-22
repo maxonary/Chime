@@ -13,8 +13,18 @@ if [[ ! -x "$swift_compiler" || ! -d "$watch_sdk" ]]; then
 fi
 
 check_dir="$(mktemp -d "${TMPDIR:-/tmp}/chime-watch-checks.XXXXXX")"
-trap 'rm -f "$check_dir/audio-tests" "$check_dir/store-tests" "$check_dir/memory-tests" "$check_dir/watch.o" "$check_dir/widget.o"; rmdir "$check_dir"' EXIT
+trap 'rm -f "$check_dir/launch-tests" "$check_dir/socket-tests" "$check_dir/audio-tests" "$check_dir/store-tests" "$check_dir/memory-tests" "$check_dir/watch.o" "$check_dir/widget.o"; rmdir "$check_dir"' EXIT
 cd "$repo_root"
+
+"$swift_compiler" -sdk "$mac_sdk" -strict-concurrency=complete \
+  "chime Watch App/Models/ChimeNavigation.swift" \
+  watch/tests/VoiceLaunchTests.swift -o "$check_dir/launch-tests"
+"$check_dir/launch-tests"
+
+"$swift_compiler" -sdk "$mac_sdk" -strict-concurrency=complete \
+  "chime Watch App/Managers/LiveSocket.swift" \
+  watch/tests/LiveSocketTests.swift -o "$check_dir/socket-tests"
+"$check_dir/socket-tests"
 
 "$swift_compiler" -sdk "$mac_sdk" \
   "chime Watch App/Managers/LiveAudioCodec.swift" \
