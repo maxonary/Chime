@@ -25,7 +25,7 @@ enrollment. Never put an OpenAI key in the Watch bundle or commit a gateway toke
 
 ## Three pages, one conversation
 
-- **Center:** tap the bubble to start/end a call. It is small with the mic off, large with the mic enabled,
+- **Center:** tap the bubble to mute/unmute (or start when idle); hold for one second to end a call. It is small with the mic off, large with the mic enabled,
   and pulses with audio input/output. Vertical swipes and Crown turns do not move or resize it.
 - **Left page:** swipe right from the bubble to see compiled memory. Memory updates automatically.
   Forgetting everything requires confirmation and is disabled during a call.
@@ -33,9 +33,9 @@ enrollment. Never put an OpenAI key in the Watch bundle or commit a gateway toke
   Voice and search changes apply to the next conversation.
 
 An active Watch conversation uses background audio, so lowering your wrist or dimming the display
-should not end it. Tap the bubble to end the call when finished; audio interruptions can still end it.
-Connection setup must finish while Chime is in the foreground. The iPhone app still ends calls when
-it enters the background.
+should not end it. Hold the bubble until it pops to end the call when finished; audio interruptions can still end it.
+Connection setup must finish while Chime is in the foreground. The iPhone app ends voice when
+it enters the background; durable OpenClaw research continues on the configured gateway.
 
 The system time remains at the top. There is no branding, tap hint, or transcript tab on the home page.
 Screenshots are in the [main README](../README.md#on-your-wrist).
@@ -72,7 +72,7 @@ On a real Watch, check:
 2. Vertical swipes and Crown rotation leave the center fixed; horizontal swipes reach both side pages.
 3. Open from a widget, complication, app icon, or shortcut: the bubble grows without another tap; speech pulses it, while silence settles it.
 4. Agent playback pulses in time with sound. Input is suppressed during playback to prevent echo.
-5. Mute shrinks the bubble, unmute grows it, and ending the call returns to the small state.
+5. Tap mutes/unmutes without ending the call. Hold for one second: the bubble compresses, gives a haptic, and pops. Releasing early or swiping away must not end it, and a completed hold must not also fire a tap. Check the VoiceOver End conversation action and Reduce Motion.
 6. End a conversation, then reconnect and ask about a remembered detail; check memory after a relaunch.
 7. Add the Smart Stack widget and a face complication; tap each from a cold launch and
    after leaving the app on a side page. Confirm the bubble opens and starts a single conversation.
@@ -82,7 +82,8 @@ On a real Watch, check:
 10. End a call during an audio send, leave during connection setup, and interrupt audio with another app.
     None should show an operation-cancelled or gateway-token alert. Reconnect afterward.
 11. Disable the network during an active call: a real connection failure must still show a reconnect message.
-12. Check Reduce Motion, permission denial, and a failed gateway connection. Dismissing an alert or a permission dialog must not trigger repeated start attempts; raising the wrist from the inactive state must not restart a manually ended call.
+12. Start independent research, leave the app, and open its completion notification. Verify the result can be discussed without rerunning it. With notifications denied, find it in Memory; after hold-to-stop, verify no late result appears.
+13. Check Reduce Motion, permission denial, and a failed gateway connection. Dismissing an alert or a permission dialog must not trigger repeated start attempts; raising the wrist from the inactive state must not restart a manually ended call.
 
 A simulator can verify layout and navigation; microphone, speaker, and networking behavior still
 need hardware checks. The current audio path supports turn-taking rather than spoken interruption.

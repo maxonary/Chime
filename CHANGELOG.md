@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased — Chime 🫧
 
+- Tap to mute/unmute without stopping work; hold for one second to compress and pop the bubble, give a haptic, and request cancellation. Includes an accessible End conversation action.
+- Optional persistent gateway research with authenticated saved answers, APNs completion notifications, and result context restored when reopening voice. Requires persistent storage and server push credentials; unconfirmed work is never automatically retried after a server restart.
+
 - Opening the app, widget, complication, or Open Chime shortcut starts voice automatically once configured, without an extra bubble tap.
 
 - Watch background audio support so lowering your wrist does not intentionally end an active call; stop unfinished setup when leaving the foreground.

@@ -5,7 +5,7 @@
 **A quiet bubble. A conversation when you need one.**
 
 Chime puts a reflective soap bubble on your iPhone and Apple Watch. Open Chime to start
-talking; tap the bubble to end the conversation. It grows when the microphone is enabled and pulses with
+talking; tap the bubble to mute or unmute, and hold for one second to end the conversation. It grows when the microphone is enabled and pulses with
 your voice and the agent’s reply. Useful details become compact memory for next time.
 
 ## On your wrist
@@ -44,8 +44,8 @@ on the iPhone and sent to its paired Watch, so there are no server addresses or 
 This is app-managed memory, separate from ChatGPT account memory or cross-device cloud sync.
 
 An active Watch call continues when the display dims or the app enters the background.
-The iPhone app ends its call when it enters the background. Muting keeps it connected; tap the
-bubble again to disconnect. Audio is streamed through the gateway and is not saved to
+The iPhone app ends its call when it enters the background. Muting keeps it connected; hold the
+bubble for one second to disconnect and request cancellation of research. Audio is streamed through the gateway and is not saved to
 files by Chime. OpenAI credentials remain on the server.
 
 On iPhone, Apple's voice processing provides echo cancellation, noise suppression,
@@ -71,8 +71,11 @@ connected agent, without adding an identity lookup to connection startup. Simple
 questions stay with GPT-Live while research runs asynchronously; dependent agent
 actions remain serialized and are never retried automatically. Longer OpenClaw
 lookups can run as two independent background tasks: keep talking, ask for their
-status, or say “cancel the research.” Results arrive when ready. These tasks last
-only for the current voice connection; ending the call stops waiting for them.
+status, or say “cancel the research.” Results arrive when ready. With durable research configured on the gateway, these tasks continue after the app
+closes. Completed answers are saved and can notify you on your phone or Watch; open
+the notification to discuss the result. Holding to pop the bubble requests cancellation.
+Push delivery requires notification permission and server APNs setup; see the
+[gateway deployment guide](gateway/README.md#durable-research-and-apple-push-deployment).
 
 A light haptic confirms the microphone is ready. The bubble breathes while
 listening, pulses with speech, and slowly turns its reflections while researching.
