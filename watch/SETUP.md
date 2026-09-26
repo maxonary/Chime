@@ -51,8 +51,8 @@ The app includes a WidgetKit extension and an **Open Chime** App Shortcut.
   and assign **Chime** to a supported slot. Circular, rectangular, inline, and corner
   layouts are included; available slots depend on the face.
 - **Siri / Shortcuts:** say **“Open Chime”** on the Watch. The app also exposes an
-  **Open Chime** action to Shortcuts on the Watch. This Watch-only target does not
-  add an iPhone Home Screen widget or an iPhone app action.
+  **Open Chime** action to Shortcuts on the Watch and iPhone. The widget extension
+  is Watch-only and does not add an iPhone Home Screen widget.
 
 Each entry opens the center bubble, even if the app was last showing memory or
 preferences. Opening Chime starts the voice conversation once the app is active and configured. These are static launchers:

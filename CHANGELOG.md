@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Watch background audio support so lowering your wrist does not intentionally end an active call; stop unfinished setup when leaving the foreground.
 - Quiet intentional call shutdown and clearer network errors, without mistaking cancelled audio sends for bad connection credentials.
 
-- Keep talking during independent OpenClaw research, ask for progress, or cancel a lookup; background tasks end with the voice connection.
+- Keep talking during independent OpenClaw research, ask for progress, or cancel a lookup; without persistent gateway storage, background tasks end with the voice connection.
 - Gentle microphone-ready haptic and distinct bubble motion for listening, speaking, and researching, with Reduce Motion support.
 
 - iPhone echo cancellation, noise suppression, and continuous microphone input during replies; preserve the Series 8 audio workaround.

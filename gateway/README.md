@@ -25,7 +25,11 @@ The Watch sends `chime.session.start` with `voice`, `research`, and optional
 GPT-Live with a server-owned prompt, model, audio format, and tool configuration.
 After `session.started`, clients may send `session.input_audio.append` (base64,
 mono PCM16 little endian, 24 kHz), `session.input_audio.mute`,
-`session.input_audio.unmute`, or `session.close`. Other commands are rejected.
+`session.input_audio.unmute`, or `session.close`. With durable research configured,
+`chime.research.resume` accepts a saved `task_id` belonging to the authenticated user.
+`chime.session.start` can select a `research_task_id` or request `research_forget: true`;
+`session.close` requests research cancellation only with `cancel_research: true`.
+Other commands are rejected.
 
 The relay forwards audio deltas, both speakers’ transcript deltas and timestamps,
 input-state acknowledgments, voice usage snapshots, and final session usage.
@@ -116,6 +120,16 @@ listener while research continues. Full saved results are available through
 Memory page, and authenticated `/v1/research` routes. New voice sessions receive
 bounded saved-result context; a notification selects the result to discuss.
 
+All research and push routes use the same bearer authentication as voice:
+
+| Route | Purpose |
+| --- | --- |
+| `GET /v1/research` | Latest 20 saved tasks and whether server push is configured |
+| `POST /v1/research/:id/ack` | Mark an owned result opened and suppress its pending alert |
+| `POST /v1/research/cancel` | Cancel `task_id` or `all`; optional `before_ms` limits cancellation to older tasks |
+| `DELETE /v1/research` | Cancel and remove the authenticated user's saved research |
+| `PUT /v1/push/devices` | Register `token`, `platform` (`ios`/`watchos`), and `environment` (`production`/`sandbox`) |
+
 A deliberate hold-to-stop requests cancellation of pending research. Muting only
 changes microphone input. Pending push alerts are suppressed while a voice client
 is attached, then sent when detached unless the user has already opened the result.
@@ -149,16 +163,22 @@ be configured before distributing a build that promises background completion.
    `APNS_IOS_TOPIC=maxonary.chime`, and
    `APNS_WATCH_TOPIC=maxonary.chime.watchkitapp`. Never commit the key or bundle it.
 4. Grant notification permission when research first starts. Both apps register their
-   device token at launch; Debug uses sandbox and TestFlight uses production. The
+   device token at launch once authorized; Debug uses sandbox and TestFlight uses production. The
    server restricts topics and device platform/environment values. Tokens are bounded
    to eight per authenticated user. Identical payloads are sent to the paired devices
    so Apple's notification forwarding can deduplicate them.
+   The deployed Chime key is restricted to production and these two app topics;
+   use TestFlight for its hardware checks. Debug push testing needs a sandbox-capable
+   key on a separate development gateway.
 5. Verify on hardware: start research, leave the app, wait for its alert, open the
    notification, and ask a follow-up about the saved result. Repeat with notifications
    denied (the answer must still be in Memory), and with a hold-to-stop (no late answer).
 
-The server retries pending delivery every 15 seconds, removes APNs-invalidated tokens,
-and expires undelivered alerts after one day. Saved jobs expire after seven days.
+The server retries pending delivery every 15 seconds, saves an acceptance receipt per
+device, removes APNs-invalidated tokens, and expires undelivered alerts after one day.
+Accepted devices are skipped on retry, including after a restart; ownership and result
+visibility are rechecked before each send. APNs acceptance does not confirm display,
+and a crash before saving its receipt can still cause a duplicate. Saved jobs expire after seven days.
 **Forget everything** cancels and deletes saved gateway research too; if offline, the
 app records a pending deletion and performs it before loading old research into voice.
 This still does not erase OpenClaw's own memory or history.
