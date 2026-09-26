@@ -60,7 +60,7 @@ export function createOpenClawBackend(options: OpenClawOptions): AgentBackend {
         }
         const response = await (options.fetch ?? fetch)(endpoint, {
           method: "POST", headers, redirect: "error",
-          signal: AbortSignal.any([signal, AbortSignal.timeout(options.timeoutMs ?? 90000)]),
+          signal: AbortSignal.any([signal, AbortSignal.timeout(options.timeoutMs ?? (research ? 600000 : 90000))]),
           body: JSON.stringify({
             model: `openclaw/${agentId}`, user: sessionUser, stream: false,
             instructions: (research ? "This is an independent background research task. Look up information only; do not modify data, send messages, make purchases, or approve actions. If a change is required, report it for the owner to authorize separately. Use the supplied context; do not assume another session history is available. " : "") + "You are responding to your owner through the Chime voice app on iPhone or Apple Watch. Keep your own configured identity; Chime is the client app, not your name. Voice transcripts can contain errors: ask about ambiguous details before taking action. Keep replies brief and suitable for speech. Follow your existing tool permissions and confirmation requirements. Never auto-approve a pending confirmation. Report an action as completed only after verifying its result. The request ID is for tracing, not a guarantee of exactly-once execution.",

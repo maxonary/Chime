@@ -1,3 +1,7 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { BackgroundResearch } from "../src/background-research.js";
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import { createServer } from "node:http";
@@ -18,7 +22,7 @@ function events(socket: WebSocket) {
   return async () => queued.length ? queued.shift() : new Promise<any>((resolve) => waiting.push(resolve));
 }
 
-async function fixture(apiKey: string | undefined = "test-key", timeout = 500, agent?: AgentBackend) {
+async function fixture(apiKey: string | undefined = "test-key", timeout = 500, agent?: AgentBackend, background?: BackgroundResearch) {
   const upstream = new WebSocketServer({ port: 0 });
   await once(upstream, "listening");
   let connections = 0;
@@ -35,7 +39,7 @@ async function fixture(apiKey: string | undefined = "test-key", timeout = 500, a
   const server = createServer();
   const relay = attachLiveServer(server, {
     tokens: new Map([["watch-token", "alice"]]), apiKey,
-    backendModel: "test-backend", agent,
+    backendModel: "test-backend", agent, background,
     upstreamURL: `ws://127.0.0.1:${(upstream.address() as AddressInfo).port}`,
     startupTimeoutMs: timeout, closeTimeoutMs: 100,
   });
@@ -318,4 +322,38 @@ test("background research resumes delegation, allows live audio, and clears bubb
     assert.equal(result.delegation_id, null);
     assert.ok(result.content.includes(acknowledgement.task_id));
   } finally { finish?.("Late"); await f.close(); }
+});
+
+
+test("saved background results hydrate new voice sessions and cannot be selected across users", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "chime-live-jobs-"));
+  const background = new BackgroundResearch(join(dir, "jobs.json"));
+  const backend = { userId: "alice", run: async () => "Saved verified finding" };
+  const job = background.start(backend, "Find the answer");
+  background.start({ userId: "bob", run: async () => "Bob private secret" }, "Private question");
+  await new Promise(resolve => setImmediate(resolve));
+  const f = await fixture("test-key", 500, backend, background);
+  try {
+    const { client, next } = await connect(f.url);
+    const connected = once(f.upstream, "connection");
+    client.send(JSON.stringify({ type: "chime.session.start", research_task_id: job.task_id }));
+    const [remote] = await connected as [WebSocket];
+    const nextRemote = events(remote);
+    const config = await nextRemote();
+    assert.match(JSON.stringify(config), /Saved verified finding/);
+    assert.ok(!JSON.stringify(config).includes("Bob private secret"));
+    assert.match(config.session.instructions, /opened a research notification/);
+    remote.send(JSON.stringify({ type: "session.started" }));
+    assert.equal((await next()).type, "session.started");
+    const result = await next();
+    assert.equal(result.type, "chime.research.result");
+    assert.equal(result.task.id, job.task_id);
+    assert.equal(result.task.result, "Saved verified finding");
+    assert.equal((await nextRemote()).type, "session.commentary.append");
+    const bobId = background.list("bob")[0].id;
+    client.send(JSON.stringify({ type: "chime.research.resume", task_id: bobId }));
+    assert.equal((await next()).type, "chime.research.unavailable");
+    client.send(JSON.stringify({ type: "chime.research.resume", task_id: job.task_id }));
+    assert.equal((await nextRemote()).type, "session.commentary.append");
+  } finally { await f.close(); background.stop(); rmSync(dir, { recursive: true, force: true }); }
 });

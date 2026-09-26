@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased — Chime 🫧
 
-- Keep talking during independent OpenClaw research, ask for progress, or cancel a lookup; background tasks end with the voice connection.
+- Tap to mute/unmute without stopping work; hold for one second to compress and pop the bubble, give a haptic, and request cancellation. Includes an accessible End conversation action.
+- Optional persistent gateway research with authenticated saved answers, APNs completion notifications, and result context restored when reopening voice. Requires persistent storage and server push credentials; unconfirmed work is never automatically retried after a server restart.
+
+- Opening the app, widget, complication, or Open Chime shortcut starts voice automatically once configured, without an extra bubble tap.
+
+- Watch background audio support so lowering your wrist does not intentionally end an active call; stop unfinished setup when leaving the foreground.
+- Quiet intentional call shutdown and clearer network errors, without mistaking cancelled audio sends for bad connection credentials.
+
+- Keep talking during independent OpenClaw research, ask for progress, or cancel a lookup; without persistent gateway storage, background tasks end with the voice connection.
 - Gentle microphone-ready haptic and distinct bubble motion for listening, speaking, and researching, with Reduce Motion support.
 
 - iPhone echo cancellation, noise suppression, and continuous microphone input during replies; preserve the Series 8 audio workaround.

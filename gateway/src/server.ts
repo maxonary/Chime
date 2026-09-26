@@ -2,6 +2,9 @@ import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import express from "express";
 import { WebSocketServer, type WebSocket } from "ws";
+import { BackgroundResearch } from "./background-research.js";
+import { registerBackgroundRoutes } from "./background-routes.js";
+import { apnsFromEnvironment, deliverPendingPushes } from "./push.js";
 import { config } from "./config.js";
 import { openClawFromEnvironment } from "./openclaw.js";
 import { attachLiveServer } from "./live.js";
@@ -18,6 +21,17 @@ initStore(config.storePath);
 
 const app = express();
 app.use(express.json({ limit: "1mb" }));
+const background = process.env.RESEARCH_STORE_PATH ? new BackgroundResearch(process.env.RESEARCH_STORE_PATH) : undefined;
+const push = apnsFromEnvironment();
+registerBackgroundRoutes(app, userFromRequest, background, Boolean(push));
+if (background && push) {
+  let delivering = false;
+  setInterval(() => {
+    if (delivering) return;
+    delivering = true;
+    void deliverPendingPushes(background, push).catch(() => console.error("[push] Journal unavailable")).finally(() => { delivering = false; });
+  }, 15000).unref();
+}
 
 /**
  * What the voice model receives the instant a task is spawned.
@@ -305,6 +319,7 @@ app.post("/context", async (req, res) => {
 const httpServer = createServer(app);
 attachLiveServer(httpServer, {
   agent: openClawFromEnvironment(),
+  background,
   tokens: config.tokens,
   apiKey: process.env.OPENAI_API_KEY,
   backendModel: process.env.LIVE_BACKEND_MODEL ?? "gpt-5.6-luna",

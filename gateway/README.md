@@ -25,7 +25,11 @@ The Watch sends `chime.session.start` with `voice`, `research`, and optional
 GPT-Live with a server-owned prompt, model, audio format, and tool configuration.
 After `session.started`, clients may send `session.input_audio.append` (base64,
 mono PCM16 little endian, 24 kHz), `session.input_audio.mute`,
-`session.input_audio.unmute`, or `session.close`. Other commands are rejected.
+`session.input_audio.unmute`, or `session.close`. With durable research configured,
+`chime.research.resume` accepts a saved `task_id` belonging to the authenticated user.
+`chime.session.start` can select a `research_task_id` or request `research_forget: true`;
+`session.close` requests research cancellation only with `cancel_research: true`.
+Other commands are rejected.
 
 The relay forwards audio deltas, both speakers’ transcript deltas and timestamps,
 input-state acknowledgments, voice usage snapshots, and final session usage.
@@ -108,23 +112,76 @@ not occupy the normal agent session. Research requests must include their releva
 context because these sessions do not share the stable session's transcript.
 OpenClaw's global `agents.defaults.maxConcurrent` still limits actual concurrency.
 
-Two research requests can run per connector, with at most eight task records per
-voice connection and a 90-second deadline. `manage_openclaw_research` accepts
-`status` or `cancel` and a task ID (or `all`), scoped to that voice connection.
-Full results are retained in memory until disconnect. A single quiet progress
-update and a bounded result excerpt are appended to GPT-Live with
-`delegation_id: null`; the backend can retrieve full results through the status
-tool. `chime.research.state` sends only the active work count to the app for bubble
-motion, including ordinary Responses delegations such as web searches.
+With `RESEARCH_STORE_PATH` configured, two research requests can run per user, with a
+10-minute deadline and at most 100 retained tasks per user for seven days. Jobs belong
+to the authenticated user, not the WebSocket: ordinary disconnects detach the voice
+listener while research continues. Full saved results are available through
+`manage_openclaw_research` (`status` or `cancel`, with a task ID or `all`), the
+Memory page, and authenticated `/v1/research` routes. New voice sessions receive
+bounded saved-result context; a notification selects the result to discuss.
+
+All research and push routes use the same bearer authentication as voice:
+
+| Route | Purpose |
+| --- | --- |
+| `GET /v1/research` | Latest 20 saved tasks and whether server push is configured |
+| `POST /v1/research/:id/ack` | Mark an owned result opened and suppress its pending alert |
+| `POST /v1/research/cancel` | Cancel `task_id` or `all`; optional `before_ms` limits cancellation to older tasks |
+| `DELETE /v1/research` | Cancel and remove the authenticated user's saved research |
+| `PUT /v1/push/devices` | Register `token`, `platform` (`ios`/`watchos`), and `environment` (`production`/`sandbox`) |
+
+A deliberate hold-to-stop requests cancellation of pending research. Muting only
+changes microphone input. Pending push alerts are suppressed while a voice client
+is attached, then sent when detached unless the user has already opened the result.
+Push is a delivery hint, not the answer store: denial, network failures, or delivery
+limits do not discard the saved result. Only independent OpenClaw research jobs
+survive disconnect; ordinary synchronous actions and in-progress Live web searches
+are not converted into durable jobs. Use the background research tool for that work.
 
 Research requests instruct OpenClaw to perform lookups only. This is a model
 instruction, **not a read-only permission boundary**: configure OpenClaw's own tool
 permissions if you need that guarantee. Chime does not auto-approve remote dialogs.
-Cancellation, timeout, or disconnect aborts the HTTP request and suppresses late
-results, but cannot guarantee remote work has stopped or undo an action. Tasks do
-not survive a voice disconnect or gateway restart. Failed or uncertain results are
-reported as unconfirmed and never automatically retried. Request IDs are for
-tracing, not exactly-once guarantees. Check unresolved work directly in OpenClaw.
+Cancellation and timeout abort the HTTP request and suppress late results, but
+cannot guarantee remote work has stopped or undo an action. After a gateway restart,
+completed answers remain available; unfinished tasks become `unconfirmed`, with no
+automatic remote replay. Request IDs are for tracing, not exactly-once guarantees.
+
+Without `RESEARCH_STORE_PATH`, the gateway retains the earlier session-only behavior
+(eight tasks, 90-second deadline, cancelled on disconnect). The durable feature must
+be configured before distributing a build that promises background completion.
+
+### Durable research and Apple push deployment
+
+1. Keep the existing gateway service on `main` and one instance. Mount a persistent
+   disk at `/var/data/chime`; set `RESEARCH_STORE_PATH=/var/data/chime/research.json`.
+   This JSON journal uses atomic replacement and private file permissions. It is
+   designed for one process; use a transactional database before scaling horizontally.
+2. Enable Push Notifications for the iPhone and Watch app identifiers. The app's
+   `watch/Chime.entitlements` requests APNs; distribution signing selects production.
+3. Configure a server-only APNs signing key using Render secret environment variables:
+   `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_PRIVATE_KEY` (the `.p8` content),
+   `APNS_IOS_TOPIC=maxonary.chime`, and
+   `APNS_WATCH_TOPIC=maxonary.chime.watchkitapp`. Never commit the key or bundle it.
+4. Grant notification permission when research first starts. Both apps register their
+   device token at launch once authorized; Debug uses sandbox and TestFlight uses production. The
+   server restricts topics and device platform/environment values. Tokens are bounded
+   to eight per authenticated user. Identical payloads are sent to the paired devices
+   so Apple's notification forwarding can deduplicate them.
+   The deployed Chime key is restricted to production and these two app topics;
+   use TestFlight for its hardware checks. Debug push testing needs a sandbox-capable
+   key on a separate development gateway.
+5. Verify on hardware: start research, leave the app, wait for its alert, open the
+   notification, and ask a follow-up about the saved result. Repeat with notifications
+   denied (the answer must still be in Memory), and with a hold-to-stop (no late answer).
+
+The server retries pending delivery every 15 seconds, saves an acceptance receipt per
+device, removes APNs-invalidated tokens, and expires undelivered alerts after one day.
+Accepted devices are skipped on retry, including after a restart; ownership and result
+visibility are rechecked before each send. APNs acceptance does not confirm display,
+and a crash before saving its receipt can still cause a duplicate. Saved jobs expire after seven days.
+**Forget everything** cancels and deletes saved gateway research too; if offline, the
+app records a pending deletion and performs it before loading old research into voice.
+This still does not erase OpenClaw's own memory or history.
 
 Deployment check: first verify authenticated `GET /v1/models` from outside the
 browser, then ask the Watch a harmless agent question and confirm the resulting
