@@ -8,7 +8,7 @@ struct ContentView: View {
 
   var body: some View {
     TabView(selection: $navigation.page) {
-      MemoryView(store: sessionManager.memoryStore)
+      MemoryView(store: sessionManager.memoryStore, inbox: sessionManager.researchInbox)
         .tag(0)
       VoiceControlView(isVisible: navigation.page == 1)
         // Center against the entire display, including the system clock inset.
@@ -35,14 +35,16 @@ struct ContentView: View {
         // An already-started conversation owns background audio. Wrist-down must
         // not end it; unfinished setup still requires the foreground.
         if sessionManager.state == .connecting {
-          sessionManager.stopListening(reason: "App entered background during setup")
+          sessionManager.stopListening(reason: "App entered background during setup", cancelResearch: false)
         }
         #else
-        sessionManager.stopListening(reason: "App entered background")
+        sessionManager.stopListening(reason: "App entered background", cancelResearch: false)
         #endif
       }
       if phase == .active {
         sessionManager.memoryStore.refresh()
+        sessionManager.researchInbox.refresh()
+        Task { await ResearchNotifications.shared.registerIfAuthorized() }
         companion.start()
         sessionManager.prepareConnection()
         startRequestedConversation()
@@ -51,8 +53,11 @@ struct ContentView: View {
     .onChange(of: navigation.wantsConversation) { _, requested in
       if requested { startRequestedConversation() }
     }
+    .onChange(of: sessionManager.isResearching) { _, researching in
+      if researching { Task { await ResearchNotifications.shared.enableForResearch() } }
+    }
     .onChange(of: sessionManager.state) { _, state in
-      if state == .idle { startRequestedConversation() }
+      if state == .idle || state == .live { startRequestedConversation() }
     }
     .onOpenURL { navigation.open($0) }
     .onChange(of: companion.isConfigured) { wasConfigured, isConfigured in
@@ -65,6 +70,8 @@ struct ContentView: View {
     .task {
       sessionManager.prepareConnection()
       sessionManager.memoryStore.refresh()
+      sessionManager.researchInbox.refresh()
+      Task { await ResearchNotifications.shared.registerIfAuthorized() }
       #if os(iOS)
       if AppSettings.load().userToken.isEmpty { navigation.page = 2 }
       #endif
@@ -83,17 +90,25 @@ struct ContentView: View {
     guard navigation.consumeConversationRequest(
       isActive: scenePhase == .active,
       isConfigured: AppSettings.load().hasConnection,
-      isEnding: sessionManager.state == .ending
+      isEnding: sessionManager.state == .ending || sessionManager.state == .connecting
     ) else { return }
     navigation.openBubble()
+    let researchID = navigation.takeResearchTaskID()
+    if let researchID, sessionManager.state == .live {
+      sessionManager.resumeResearch(researchID)
+      sessionManager.researchInbox.acknowledge(researchID)
+      return
+    }
     // Never replace an active call or automatically retry a failed connection.
     guard sessionManager.state == .idle, sessionManager.error == nil else { return }
-    sessionManager.startListening()
+    sessionManager.startListening(researchTaskID: researchID)
+    if let researchID { sessionManager.researchInbox.acknowledge(researchID) }
   }
 }
 
 private struct MemoryView: View {
   @ObservedObject var store: MemoryStore
+  @ObservedObject var inbox: ResearchInbox
   @EnvironmentObject var sessionManager: AgentSessionManager
   @State private var confirmingForget = false
 
@@ -106,12 +121,13 @@ private struct MemoryView: View {
     #if os(iOS)
     phoneContent
       .confirmationDialog("Forget all remembered details and saved conversations?", isPresented: $confirmingForget) {
-        Button("Forget everything", role: .destructive) { store.forget() }
+        Button("Forget everything", role: .destructive) { sessionManager.forgetEverything() }
       }
     #else
     ScrollView {
       VStack(alignment: .leading, spacing: 12) {
         Text("Memory").font(.headline)
+        ResearchAnswersView(inbox: inbox)
         if store.content.facts.isEmpty && store.content.context.isEmpty {
           Text("Useful details from our conversations will be remembered here automatically.")
             .font(.caption).foregroundStyle(.secondary)
@@ -127,7 +143,7 @@ private struct MemoryView: View {
         } else if let error = store.error {
           Text(error).font(.caption2).foregroundStyle(.secondary)
         }
-        if hasMemory || hasConversations {
+        if hasMemory || hasConversations || !inbox.answers.isEmpty {
           Button("Forget everything", role: .destructive) { confirmingForget = true }
             .font(.caption)
             .disabled(sessionManager.isListening)
@@ -137,7 +153,7 @@ private struct MemoryView: View {
       .padding(.horizontal, 10)
     }
     .confirmationDialog("Forget all remembered details and saved conversations?", isPresented: $confirmingForget) {
-      Button("Forget everything", role: .destructive) { store.forget() }
+      Button("Forget everything", role: .destructive) { sessionManager.forgetEverything() }
     }
     #endif
   }
@@ -152,6 +168,8 @@ private struct MemoryView: View {
             .font(.body).foregroundStyle(.secondary)
         }
         .padding(.top, 24)
+
+        ResearchAnswersView(inbox: inbox)
 
         if !hasMemory {
           VStack(spacing: 20) {
@@ -206,7 +224,7 @@ private struct MemoryView: View {
         } else if let error = store.error {
           Text(error).font(.callout).foregroundStyle(.secondary)
         }
-        if hasMemory || hasConversations {
+        if hasMemory || hasConversations || !inbox.answers.isEmpty {
           Button("Forget everything", role: .destructive) { confirmingForget = true }
             .font(.callout).disabled(sessionManager.isListening)
             .frame(maxWidth: .infinity).padding(.top, 8)
@@ -223,4 +241,22 @@ private struct MemoryView: View {
 
 #Preview {
   ContentView().environmentObject(AgentSessionManager())
+}
+
+private struct ResearchAnswersView: View {
+  @ObservedObject var inbox: ResearchInbox
+  var body: some View {
+    if let error = inbox.error { Text(error).font(.caption).foregroundStyle(.secondary) }
+    ForEach(inbox.answers.prefix(8)) { answer in
+      Button {
+        ChimeNavigation.shared.openResearch(answer.id)
+      } label: {
+        VStack(alignment: .leading, spacing: 4) {
+          Text(answer.state == "running" ? "Researching…" : answer.state == "completed" ? "Ready to discuss" : "Research stopped").font(.caption).foregroundStyle(.secondary)
+          Text(answer.request).lineLimit(2)
+        }
+      }
+      .buttonStyle(.plain)
+    }
+  }
 }

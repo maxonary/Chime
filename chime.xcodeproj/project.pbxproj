@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CB7AF13FB1274A9700101012 /* ResearchNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB7AF13FB1274A9700101011 /* ResearchNotifications.swift */; };
+		CB7AF13FB1274A9700101002 /* ResearchInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB7AF13FB1274A9700101001 /* ResearchInbox.swift */; };
 		EA96CD6543D148FE90C3B121 /* LiveSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA96CD6543D148FE90C3B122 /* LiveSocket.swift */; };
 		0213A872733D259A3BBDF6F4 /* LiveAudioCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34D42BC7C4F4259A2927A38A /* LiveAudioCodec.swift */; };
 		0449A72BD2E2E764A0B15A3D /* soap-bubble.png in Resources */ = {isa = PBXBuildFile; fileRef = 2F0A5E3ADF9EDCA4528985EC /* soap-bubble.png */; };
@@ -77,6 +79,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		CB7AF13FB1274A9700101011 /* ResearchNotifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ResearchNotifications.swift; path = "chime Watch App/Managers/ResearchNotifications.swift"; sourceTree = "<group>"; };
+		CB7AF13FB1274A9700101001 /* ResearchInbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ResearchInbox.swift; path = "chime Watch App/Managers/ResearchInbox.swift"; sourceTree = "<group>"; };
 		EA96CD6543D148FE90C3B122 /* LiveSocket.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = LiveSocket.swift; path = "chime Watch App/Managers/LiveSocket.swift"; sourceTree = "<group>"; };
 		03321FEDF8462E4D150A7E18 /* Chime Widgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Chime Widgets.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		0B7D145955BD2AA5D6F1ACD8 /* AgentSessionManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AgentSessionManager.swift; path = "chime Watch App/Managers/AgentSessionManager.swift"; sourceTree = "<group>"; };
@@ -190,6 +194,8 @@
 				ACB63E8CC9DA0C1013DB61AE /* ChimeShortcuts.swift */,
 				0B7D145955BD2AA5D6F1ACD8 /* AgentSessionManager.swift */,
 				EA96CD6543D148FE90C3B122 /* LiveSocket.swift */,
+				CB7AF13FB1274A9700101011 /* ResearchNotifications.swift */,
+				CB7AF13FB1274A9700101001 /* ResearchInbox.swift */,
 				A5AC4486CAA1AF39BABA4B47 /* CompanionConnection.swift */,
 				3E8C3C209C5332CF8D3B5D78 /* ConversationStore.swift */,
 				34D42BC7C4F4259A2927A38A /* LiveAudioCodec.swift */,
@@ -360,6 +366,8 @@
 				A0F0BD93822ACAD175D09FED /* ChimeShortcuts.swift in Sources */,
 				B6E043961CA81E329DAF7C39 /* AgentSessionManager.swift in Sources */,
 				EA96CD6543D148FE90C3B121 /* LiveSocket.swift in Sources */,
+				CB7AF13FB1274A9700101012 /* ResearchNotifications.swift in Sources */,
+				CB7AF13FB1274A9700101002 /* ResearchInbox.swift in Sources */,
 				073729CF24A478FD0F52BCD7 /* CompanionConnection.swift in Sources */,
 				D00DCFB3C6283F1DC5517BCD /* ConversationStore.swift in Sources */,
 				0213A872733D259A3BBDF6F4 /* LiveAudioCodec.swift in Sources */,
@@ -516,7 +524,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CODE_SIGN_ENTITLEMENTS = "watch/Chime.entitlements";
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = Q37KAF726J;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -552,7 +561,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CODE_SIGN_ENTITLEMENTS = "watch/Chime.entitlements";
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = Q37KAF726J;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -588,7 +598,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CODE_SIGN_ENTITLEMENTS = "watch/Chime.entitlements";
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = Q37KAF726J;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "watch/Chime-Info.plist";
@@ -620,7 +631,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CODE_SIGN_ENTITLEMENTS = "watch/Chime.entitlements";
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = Q37KAF726J;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "watch/Chime-Info.plist";
@@ -653,7 +665,7 @@
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = Q37KAF726J;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Chime Widgets/Info.plist";
@@ -680,7 +692,7 @@
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = Q37KAF726J;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Chime Widgets/Info.plist";

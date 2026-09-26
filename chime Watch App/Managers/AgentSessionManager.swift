@@ -23,6 +23,7 @@ final class AgentSessionManager: ObservableObject {
   @Published var error: String?
   let conversationStore: ConversationStore
   let memoryStore: MemoryStore
+  let researchInbox = ResearchInbox()
 
   var isConnected: Bool { state == .live }
   var isListening: Bool { state != .idle }
@@ -68,7 +69,7 @@ final class AgentSessionManager: ObservableObject {
       .sink { [weak self] notification in
         guard let kind = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
               kind == AVAudioSession.InterruptionType.began.rawValue else { return }
-        Task { @MainActor in self?.stopListening(reason: "Audio interruption") }
+        Task { @MainActor in self?.stopListening(reason: "Audio interruption", cancelResearch: false) }
       }
   }
 
@@ -87,7 +88,7 @@ final class AgentSessionManager: ObservableObject {
     }
   }
 
-  func startListening() {
+  func startListening(researchTaskID: String? = nil) {
     audioDiagnostic("Start requested")
     guard state == .idle else { return }
     let settings = AppSettings.load()
@@ -148,7 +149,8 @@ final class AgentSessionManager: ObservableObject {
         memoryStore.activeConversationID = conversation.id
         let memory = memoryStore.content
         try await send(["type": "chime.session.start", "voice": settings.liveVoice ?? "marin", "research": settings.autoResearch,
-                        "history": history, "memory": ["facts": memory.facts, "context": memory.context]], on: connection)
+                        "history": history, "memory": ["facts": memory.facts, "context": memory.context],
+                        "research_task_id": researchTaskID ?? "", "research_forget": researchInbox.hasPendingForget], on: connection)
         guard generation == id, !Task.isCancelled else { return }
         while !Task.isCancelled, generation == id {
           let message = try await connection.receive()
@@ -183,9 +185,14 @@ final class AgentSessionManager: ObservableObject {
     }
   }
 
-  func stopListening(reason: String = "User ended call") {
+  func stopListening(reason: String = "User ended call", cancelResearch: Bool = true) {
     guard state != .idle, state != .ending else { return }
     audioDiagnostic(reason)
+    if cancelResearch {
+      // HTTP is also needed if Stop occurs before the voice socket is ready.
+      let before = String(Int64(Date().timeIntervalSince1970 * 1000))
+      Task { _ = try? await ResearchInbox.request(path: "v1/research/cancel", method: "POST", body: ["task_id": "all", "before_ms": before]) }
+    }
     let wasLive = state == .live
     state = .ending
     // watchOS grants WebSocket access through the active audio session. Keep it
@@ -195,7 +202,7 @@ final class AgentSessionManager: ObservableObject {
     guard wasLive, let socket else { cleanup(); return }
     let id = generation
     Task {
-      do { try await send(["type": "session.close"], on: socket) }
+      do { try await send(["type": "session.close", "cancel_research": cancelResearch], on: socket) }
       catch { if generation == id { cleanup() } }
     }
     timeoutTask = Task { [weak self] in
@@ -204,6 +211,17 @@ final class AgentSessionManager: ObservableObject {
       self.audioDiagnostic("Closing timed out before final usage was confirmed")
       self.cleanup()
     }
+  }
+
+  func resumeResearch(_ id: String) {
+    guard state == .live, let socket else { return }
+    Task { try? await send(["type": "chime.research.resume", "task_id": id], on: socket) }
+  }
+
+  func forgetEverything() {
+    guard state == .idle else { return }
+    researchInbox.forget()
+    memoryStore.forget()
   }
 
   func newConversation() {
@@ -257,6 +275,11 @@ final class AgentSessionManager: ObservableObject {
       #else
       UIImpactFeedbackGenerator(style: .soft).impactOccurred(intensity: 0.4)
       #endif
+    case "chime.research.result":
+      researchInbox.refresh()
+      if state == .live, let task = event["task"] as? [String: Any], let taskID = task["id"] as? String {
+        researchInbox.acknowledge(taskID)
+      }
     case "chime.research.state":
       if state == .live, let active = event["active"] as? Int, (0...64).contains(active) {
         isResearching = active > 0

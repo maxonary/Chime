@@ -29,6 +29,15 @@ struct VoiceLaunchTests {
     assert(!consume())
     navigation.openConversation()
     assert(consume(), "A shortcut starts voice")
+    let researchID = UUID().uuidString
+    navigation.openResearch(researchID)
+    assert(!consume(ending: true), "A notification waits while the voice session is connecting or ending")
+    assert(navigation.researchTaskID == researchID)
+    assert(consume())
+    assert(navigation.takeResearchTaskID() == researchID)
+    assert(navigation.takeResearchTaskID() == nil, "A result resumes only once")
+    navigation.openResearch("invalid")
+    assert(!consume(), "Malformed notifications cannot start voice")
     print("PASS: cold and warm launches, widgets and shortcuts start once; setup and closing defer; inactive transitions do not restart voice")
   }
 }

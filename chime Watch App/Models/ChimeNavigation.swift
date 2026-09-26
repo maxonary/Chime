@@ -6,6 +6,18 @@ import Foundation
 final class ChimeNavigation: ObservableObject {
   static let shared = ChimeNavigation()
   @Published var page = 1
+  private(set) var researchTaskID: String?
+
+  func openResearch(_ id: String) {
+    guard UUID(uuidString: id) != nil else { return }
+    researchTaskID = id
+    openConversation()
+  }
+
+  func takeResearchTaskID() -> String? {
+    defer { researchTaskID = nil }
+    return researchTaskID
+  }
   @Published private(set) var wantsConversation = true
 
   func requestConversation() { wantsConversation = true }
