@@ -26,7 +26,7 @@ enrollment. Never put an OpenAI key in the Watch bundle or commit a gateway toke
 ## Three pages, one conversation
 
 - **Center:** tap the bubble to mute/unmute (or start when idle); hold for one second to end a call. It is small with the mic off, large with the mic enabled,
-  and pulses with audio input/output. Vertical swipes and Crown turns do not move or resize it.
+  and pulses with audio input/output. Holding bursts the film into strands and droplets, then leaves a brief empty pause before a small idle bubble returns. Tap it to begin another call. Vertical swipes and Crown turns do not move or resize it.
 - **Left page:** swipe right from the bubble to see compiled memory. Memory updates automatically.
   Forgetting everything requires confirmation and is disabled during a call.
 - **Right page:** swipe left from the bubble for voice, web search, and microphone mute while connected.
@@ -72,7 +72,7 @@ On a real Watch, check:
 2. Vertical swipes and Crown rotation leave the center fixed; horizontal swipes reach both side pages.
 3. Open from a widget, complication, app icon, or shortcut: the bubble grows without another tap; speech pulses it, while silence settles it.
 4. Agent playback pulses in time with sound. Input is suppressed during playback to prevent echo.
-5. Tap mutes/unmutes without ending the call. Hold for one second: the bubble compresses, gives a haptic, and pops. Releasing early or swiping away must not end it, and a completed hold must not also fire a tap. Check the VoiceOver End conversation action and Reduce Motion.
+5. Tap mutes/unmutes without ending the call. Hold for one second: the bubble compresses, gives a haptic, and bursts into strands and droplets. Expect about one second fully empty before a small bubble forms over 0.65 seconds; it must wait at least 1.8 seconds after the burst and until the old call has finished ending. It stays idle until tapped. Releasing early or swiping away must not end the call, and a completed hold must not also fire a tap. Check the VoiceOver End conversation action and Reduce Motion's short fade without particles.
 6. End a conversation, then reconnect and ask about a remembered detail; check memory after a relaunch.
 7. Add the Smart Stack widget and a face complication; tap each from a cold launch and
    after leaving the app on a side page. Confirm the bubble opens and starts a single conversation.

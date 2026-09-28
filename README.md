@@ -24,10 +24,15 @@ fresh conversation store; your page fills with remembered details automatically.
 | Speech coming in or playing out | Pulses driven by the audio level |
 | Connecting or ending | A small bubble with a progress indicator |
 
+Holding to end a conversation tears the bubble's film into strands and droplets.
+The screen then stays empty briefly before a small idle bubble forms. It returns
+no sooner than 1.8 seconds after the burst, waits for the old call to finish ending,
+and stays idle until tapped. Reduce Motion uses a short fade without flying particles.
+
 The center screen stays fixed: no vertical scrolling, no Crown scrolling or zoom,
 no branding, and no tap reminder. Swipe horizontally to open the two side pages.
 The Digital Crown remains available for their content and preferences. VoiceOver
-announces the conversation state; Reduce Motion disables pulsing and animated transitions.
+announces the conversation state; Reduce Motion disables pulsing and animated size changes.
 Animation also pauses on a dimmed or inactive display and when the bubble is offscreen.
 
 ## Conversations that carry forward
