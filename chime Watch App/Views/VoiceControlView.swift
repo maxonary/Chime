@@ -11,7 +11,9 @@ struct VoiceControlView: View {
   @FocusState private var ownsCrown: Bool
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @GestureState private var holding = false
-  @State private var popped = false
+  @State private var burst: SoapBubbleBurst?
+
+  private var popped: Bool { burst != nil }
 
   private var activity: SoapBubbleView.Activity {
     switch sessionManager.state {
@@ -33,12 +35,32 @@ struct VoiceControlView: View {
                        audioLevel: max(sessionManager.inputLevel, sessionManager.outputLevel),
                        isVisible: isVisible)
           .padding(4)
-          .scaleEffect(x: popped ? 1.12 : holding && sessionManager.isListening ? 0.80 : 1,
-                       y: holding && sessionManager.isListening && !popped ? 0.92 : 1)
+          .scaleEffect(x: popped ? 0.08 : holding && sessionManager.isListening ? 0.80 : 1,
+                       y: popped ? 0.08 : holding && sessionManager.isListening ? 0.92 : 1)
           .opacity(popped ? 0 : 1)
           .animation(reduceMotion ? nil : .easeIn(duration: 1), value: holding)
-          .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: popped)
+          .animation(reduceMotion || popped ? nil : .easeOut(duration: 0.65), value: popped)
           .allowsHitTesting(false)
+
+        if let burst {
+          SoapBubbleBurstView(burst: burst, isVisible: isVisible)
+            .padding(4)
+            .allowsHitTesting(false)
+        }
+      }
+      .task(id: burst?.id) {
+        guard let id = burst?.id else { return }
+        // Let the film and droplets disappear, then hold an empty screen before
+        // forming a fresh idle bubble. This never starts another conversation.
+        do {
+          try await Task.sleep(for: .seconds(1.8))
+          // Do not respawn a connecting spinner while the old call drains.
+          while sessionManager.state == .ending {
+            try await Task.sleep(for: .milliseconds(100))
+          }
+        } catch { return }
+        guard burst?.id == id else { return }
+        burst = nil
       }
       .contentShape(Rectangle())
       .gesture(
@@ -80,11 +102,7 @@ struct VoiceControlView: View {
     #else
     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     #endif
-    popped = true
+    burst = SoapBubbleBurst(scale: sessionManager.isConnected && !sessionManager.isMuted ? 1.10 : 0.68)
     sessionManager.stopListening(cancelResearch: true)
-    Task { @MainActor in
-      try? await Task.sleep(for: .milliseconds(350))
-      popped = false
-    }
   }
 }

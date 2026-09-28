@@ -92,3 +92,114 @@ struct SoapBubbleView: View {
     }
   }
 }
+
+/// A single, finite rupture. Its geometry is captured before ending the audio
+/// session, so the film cannot shrink to the idle size midway through the pop.
+struct SoapBubbleBurst {
+  let id = UUID()
+  let startedAt = Date()
+  let scale: Double
+}
+
+struct SoapBubbleBurstView: View {
+  let burst: SoapBubbleBurst
+  var isVisible = true
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.isLuminanceReduced) private var isLuminanceReduced
+  @Environment(\.scenePhase) private var scenePhase
+
+  var body: some View {
+    TimelineView(.animation(minimumInterval: 1.0 / 30,
+                            paused: !isVisible || scenePhase != .active || isLuminanceReduced)) { timeline in
+      let elapsed = max(0, timeline.date.timeIntervalSince(burst.startedAt))
+      Canvas { context, size in
+        guard elapsed < 0.8 else { return }
+        let side = min(size.width, size.height) * burst.scale
+        let radius = side * 0.40
+        let center = CGPoint(x: size.width / 2, y: size.height / 2)
+        let photo = context.resolve(Image("SoapBubble"))
+        context.translateBy(x: center.x, y: center.y)
+        // Preserve the squash at the end of the one-second hold.
+        context.scaleBy(x: 0.80, y: 0.92)
+        let photoRect = CGRect(x: -side / 2, y: -side / 2, width: side, height: side)
+
+        if reduceMotion || isLuminanceReduced {
+          // No flying particles or expanding hole when reduced motion is on.
+          context.opacity = max(0, 1 - elapsed / 0.18)
+          context.draw(photo, in: photoRect)
+          return
+        }
+
+        let rupture = min(1, elapsed / 0.22)
+        let puncture = CGPoint(x: radius * 0.30, y: -radius * 0.36)
+        let holeRadius = radius * 1.65 * pow(rupture, 0.72)
+        let hole = CGRect(x: puncture.x - holeRadius, y: puncture.y - holeRadius,
+                          width: holeRadius * 2, height: holeRadius * 2)
+        if rupture < 1 {
+          context.drawLayer { film in
+            film.draw(photo, in: photoRect)
+            // A hole tears outwards from one point; the intact film stays
+            // photographic until the retracting edge reaches it.
+            film.blendMode = .destinationOut
+            film.fill(Path(ellipseIn: hole), with: .color(.black))
+          }
+          var edge = context
+          edge.clip(to: Path(ellipseIn: CGRect(x: -radius, y: -radius,
+                                             width: radius * 2, height: radius * 2)))
+          edge.stroke(Path(ellipseIn: hole), with: .color(.white.opacity((1 - rupture) * 0.75)),
+                      lineWidth: max(0.6, side * 0.004))
+        }
+
+        // Irregular strands of the rim peel away, rather than turning into
+        // confetti. Deterministic variation keeps every frame continuous.
+        for index in 0..<11 {
+          let seed = Double(index)
+          let delay = 0.025 + seed.truncatingRemainder(dividingBy: 4) * 0.014
+          let age = elapsed - delay
+          guard age > 0, age < 0.30 else { continue }
+          let progress = age / 0.30
+          let angle = seed * 2.399963
+          let distance = radius * (1 + progress * 0.22)
+          let width = 0.10 + 0.07 * (sin(seed * 7.1) + 1)
+          var strand = Path()
+          strand.addArc(center: .zero, radius: distance,
+                        startAngle: .radians(angle - width * (1 - progress)),
+                        endAngle: .radians(angle + width * (1 - progress)), clockwise: false)
+          var fragment = context
+          fragment.translateBy(x: cos(angle) * radius * progress * 0.10,
+                               y: sin(angle) * radius * progress * 0.10 + radius * progress * progress * 0.12)
+          fragment.stroke(strand, with: .color(tint(index).opacity(pow(1 - progress, 1.5) * 0.8)),
+                          style: StrokeStyle(lineWidth: max(0.5, side * 0.003 * (1 - progress)), lineCap: .round))
+        }
+
+        for index in 0..<30 {
+          let seed = Double(index)
+          let angle = seed * 2.399963
+          let delay = 0.035 + (sin(seed * 3.7) + 1) * 0.055
+          let age = elapsed - delay
+          let lifetime = 0.36 + (cos(seed * 1.7) + 1) * 0.12
+          guard age > 0, age < lifetime else { continue }
+          let progress = age / lifetime
+          let speed = 0.28 + (sin(seed * 8.3) + 1) * 0.16
+          let distance = radius * (0.94 + speed * (1 - pow(1 - progress, 2)))
+          let x = cos(angle) * distance
+          let y = sin(angle) * distance + radius * progress * progress * 0.24
+          let dropletSize = max(0.65, side * (0.0025 + (sin(seed * 2.1) + 1) * 0.002)) * (1 - progress * 0.65)
+          let opacity = min(1, age / 0.025) * pow(1 - progress, 1.25)
+          let rect = CGRect(x: x - dropletSize, y: y - dropletSize,
+                            width: dropletSize * 2, height: dropletSize * 2)
+          context.fill(Path(ellipseIn: rect), with: .radialGradient(
+            Gradient(colors: [.white.opacity(opacity), tint(index).opacity(opacity * 0.65), .clear]),
+            center: CGPoint(x: x - dropletSize * 0.25, y: y - dropletSize * 0.3),
+            startRadius: 0, endRadius: dropletSize * 1.25))
+        }
+      }
+    }
+    .accessibilityHidden(true)
+  }
+
+  private func tint(_ index: Int) -> Color {
+    [.white, Color(red: 0.66, green: 0.90, blue: 1),
+     Color(red: 1, green: 0.78, blue: 0.89), Color(red: 0.93, green: 0.86, blue: 0.64)][index % 4]
+  }
+}
