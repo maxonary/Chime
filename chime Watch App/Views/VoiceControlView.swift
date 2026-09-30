@@ -10,7 +10,7 @@ struct VoiceControlView: View {
   @EnvironmentObject var sessionManager: AgentSessionManager
   @FocusState private var ownsCrown: Bool
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @GestureState private var holding = false
+  @State private var holding = false
   @State private var burst: SoapBubbleBurst?
 
   private var popped: Bool { burst != nil }
@@ -27,7 +27,8 @@ struct VoiceControlView: View {
   }
 
   var body: some View {
-    // Exclusive recognition prevents a completed hold from also firing a tap.
+    // Recognize taps directly: making them wait for a long press to fail can
+    // swallow short touches inside the paged container on iPhone and Watch.
     Rectangle().fill(.black)
       .overlay {
         SoapBubbleView(activity: activity,
@@ -63,12 +64,10 @@ struct VoiceControlView: View {
         burst = nil
       }
       .contentShape(Rectangle())
-      .gesture(
-        LongPressGesture(minimumDuration: 1, maximumDistance: 24)
-          .updating($holding) { value, state, _ in state = value }
-          .onEnded { _ in endConversation() }
-          .exclusively(before: TapGesture().onEnded { tap() })
-      )
+      .onTapGesture { tap() }
+      .onLongPressGesture(minimumDuration: 1, maximumDistance: 24,
+                          perform: { endConversation() },
+                          onPressingChanged: { holding = $0 })
       .allowsHitTesting(sessionManager.state != .ending && !popped)
     // Consume Crown input on the center page without scrolling, zooming, or
     // changing pages. The side pages retain their normal Crown behavior.
@@ -97,6 +96,7 @@ struct VoiceControlView: View {
 
   private func endConversation() {
     guard sessionManager.isListening, sessionManager.state != .ending, !popped else { return }
+    holding = false
     #if os(watchOS)
     WKInterfaceDevice.current().play(.stop)
     #else

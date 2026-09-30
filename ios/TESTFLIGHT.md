@@ -62,6 +62,14 @@ navigation, microphone permission, an actual audible reply, stop/background hand
 and paired-device setup on hardware. Simulator builds cannot establish hardware
 WatchConnectivity or validate microphone routing on a real iPhone.
 
+The **Chime** scheme also includes `ChimeUITests`. Run Product → Test on an
+iPhone simulator, or `xcodebuild test -project chime.xcodeproj -scheme Chime
+-destination 'platform=iOS Simulator,name=iPhone 17 Pro'`. These tests use an
+unconfigured connection override and real touch events to verify bubble taps,
+hold/tap separation, and horizontal paging without calling the voice service.
+Keep simulator code signing enabled so Xcode replaces the test runner when its
+tests change. Physical-device checks are still required for audio and Watch gestures.
+
 PrivacyInfo.xcprivacy declares app-local UserDefaults usage. The encryption declaration
 covers the system-provided HTTPS/TLS and hashing used by the app. App Store privacy
 answers and a public privacy policy still need review before public distribution.
