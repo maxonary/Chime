@@ -37,6 +37,16 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "ADABA13F4989C722FAC2A389"
+               BuildableName = "ChimeUITests.xctest"
+               BlueprintName = "ChimeUITests"
+               ReferencedContainer = "container:chime.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction
