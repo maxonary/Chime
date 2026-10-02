@@ -1,0 +1,3 @@
+self-hosted-runner:
+  # Official hosted preview label; actionlint 1.7.7 predates its introduction.
+  labels: [xcode-27]

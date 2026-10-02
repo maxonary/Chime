@@ -1,3 +1,4 @@
 .DS_Store
 xcuserdata/
 .claude/settings.local.json
+__pycache__/

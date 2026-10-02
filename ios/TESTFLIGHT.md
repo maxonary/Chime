@@ -69,3 +69,11 @@ answers and a public privacy policy still need review before public distribution
 Apple references: [TestFlight installation](https://testflight.apple.com/),
 [beta testing](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview/),
 [Watch companion configuration](https://developer.apple.com/documentation/technotes/tn3157-updating-your-watchos-project-for-swiftui-and-widgetkit).
+
+## CI and internal TestFlight automation
+
+The opt-in [CI/TestFlight pipeline](../docs/testflight-ci.md) validates relevant PRs
+and can upload app-changing main commits to **internal-only** TestFlight after
+separate environment/signing setup. Uploads are disabled by default. Gateway-only
+and documentation changes do not upload an app. Follow the build-number namespace
+rules before mixing manual uploads with CI releases.
