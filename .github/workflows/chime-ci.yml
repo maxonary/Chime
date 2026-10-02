@@ -1,0 +1,117 @@
+name: Chime CI
+
+# Always create the required gate, including docs-only PRs. Classify inside the
+# workflow instead of top-level paths filters that can leave required checks pending.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Changes and pipeline tests
+    runs-on: ubuntu-24.04
+    outputs:
+      gateway: ${{ steps.paths.outputs.gateway }}
+      apple: ${{ steps.paths.outputs.apple }}
+      upload: ${{ steps.paths.outputs.upload }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: paths
+        run: python3 scripts/ci/changes.py
+      - name: Pipeline unit tests
+        run: python3 -m unittest discover -s scripts/ci/tests -v
+      - name: Validate workflow syntax and expressions
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+
+  gateway:
+    name: Gateway tests
+    needs: changes
+    if: needs.changes.outputs.gateway == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+      - working-directory: gateway
+        run: npm ci
+      - working-directory: gateway
+        run: npm run typecheck && npm test
+
+  apple:
+    name: iPhone and Watch checks
+    needs: changes
+    if: needs.changes.outputs.apple == 'true'
+    # Official GitHub Xcode 27 preview image; see docs/testflight-ci.md.
+    runs-on: xcode-27
+    timeout-minutes: 45
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - run: ./scripts/ci/apple-checks.sh
+
+  validated:
+    name: Validated commit
+    needs: [changes, gateway, apple]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every applicable check
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          GATEWAY_REQUIRED: ${{ needs.changes.outputs.gateway }}
+          GATEWAY_RESULT: ${{ needs.gateway.result }}
+          APPLE_REQUIRED: ${{ needs.changes.outputs.apple }}
+          APPLE_RESULT: ${{ needs.apple.result }}
+        run: |
+          test "$CHANGES_RESULT" = success
+          if [ "$GATEWAY_REQUIRED" = true ]; then test "$GATEWAY_RESULT" = success; fi
+          if [ "$APPLE_REQUIRED" = true ]; then test "$APPLE_RESULT" = success; fi
+
+  internal-testflight:
+    name: Internal TestFlight (opt-in)
+    needs: [changes, validated]
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      github.repository == 'maxonary/Chime' && needs.changes.outputs.upload == 'true' &&
+      needs.validated.result == 'success' && vars.TESTFLIGHT_UPLOAD_ENABLED == 'true'
+    runs-on: xcode-27
+    timeout-minutes: 60
+    environment: internal-testflight
+    concurrency:
+      group: chime-internal-testflight
+      cancel-in-progress: false
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Sign and upload this validated commit, internal only
+        env:
+          TESTFLIGHT_UPLOAD_ENABLED: ${{ vars.TESTFLIGHT_UPLOAD_ENABLED }}
+          TESTFLIGHT_BUILD_OFFSET: ${{ vars.TESTFLIGHT_BUILD_OFFSET }}
+          GH_TOKEN: ${{ github.token }}
+          APPLE_DISTRIBUTION_P12_BASE64: ${{ secrets.APPLE_DISTRIBUTION_P12_BASE64 }}
+          APPLE_DISTRIBUTION_P12_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_P12_PASSWORD }}
+          IPHONE_PROFILE_BASE64: ${{ secrets.IPHONE_PROFILE_BASE64 }}
+          WATCH_PROFILE_BASE64: ${{ secrets.WATCH_PROFILE_BASE64 }}
+          WIDGET_PROFILE_BASE64: ${{ secrets.WIDGET_PROFILE_BASE64 }}
+          ASC_PRIVATE_KEY_BASE64: ${{ secrets.ASC_PRIVATE_KEY_BASE64 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: python3 scripts/ci/release.py upload-internal
