@@ -1,3 +1,4 @@
+import { dotFromEnvironment } from "./dot/environment.js";
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import express from "express";
@@ -21,6 +22,7 @@ initStore(config.storePath);
 
 const app = express();
 app.use(express.json({ limit: "1mb" }));
+dotFromEnvironment(app, config.tokens, config.serviceToken);
 const background = process.env.RESEARCH_STORE_PATH ? new BackgroundResearch(process.env.RESEARCH_STORE_PATH) : undefined;
 const push = apnsFromEnvironment();
 registerBackgroundRoutes(app, userFromRequest, background, Boolean(push));
