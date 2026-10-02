@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 export interface AgentBackend {
+  kind?: "openclaw" | "dot";
   userId: string;
   run: (request: string, operationId: string, signal: AbortSignal, mode?: "research") => Promise<string>;
 }

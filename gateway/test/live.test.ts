@@ -357,3 +357,25 @@ test("saved background results hydrate new voice sessions and cannot be selected
     assert.equal((await nextRemote()).type, "session.commentary.append");
   } finally { await f.close(); background.stop(); rmSync(dir, { recursive: true, force: true }); }
 });
+
+test("dot backend cannot be accidentally attached to the optional Live delegation path", async () => {
+  const f = await fixture("test-key", 500, { userId: "alice", kind: "dot", run: async () => "must not run" });
+  try {
+    const client = new WebSocket(f.url, { headers: { Authorization: "Bearer watch-token" } });
+    client.on("error", () => {});
+    const [, response] = await once(client, "unexpected-response");
+    assert.equal(response.statusCode, 503);
+    client.terminate(); assert.equal(f.connections, 0);
+  } finally { await f.close(); }
+});
+
+test("explicit dot voice selection fails instead of falling back to another model", async () => {
+  const f = await fixture();
+  try {
+    const { client, next } = await connect(f.url);
+    client.send(JSON.stringify({ type: "chime.session.start", agent_mode: "dot" }));
+    const event = await next();
+    assert.match(event.error.message, /Dot voice routing is not available/);
+    assert.equal(f.connections, 0); client.terminate();
+  } finally { await f.close(); }
+});

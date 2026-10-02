@@ -331,3 +331,11 @@ calendar when the phone is asleep.
 - Roadmap: more connectable apps (Gmail, Notion, Linear), scheduled reminders
   via deployments, tool-permission prompts surfaced as spoken confirmations,
   Android parity for the backend switcher and local tools.
+
+## Experimental ChatGPT dot text bridge
+
+The opt-in MCP Events scaffold is documented in
+[ChatGPT dot bridge](../docs/chatgpt-dot-bridge.md), including OAuth setup gates,
+durable text message/reply routes, and local tests. It is disabled by default and
+does not yet route Watch audio to a dot. Existing OpenClaw voice routing remains
+unchanged. The plugin packaging template is under `plugins/chime-dot`.

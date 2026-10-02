@@ -79,7 +79,8 @@ export function attachLiveServer(server: Server, options: LiveOptions) {
   server.on("upgrade", (req, socket, head) => {
     if ((req.url ?? "/").split("?")[0] !== "/v1/live") return;
     const userId = liveUser(req, options.tokens);
-    const status = !userId ? "401 Unauthorized" : !options.apiKey ? "503 Service Unavailable" : null;
+    const dotSelected = options.agent?.kind === "dot" && options.agent.userId === userId;
+    const status = dotSelected ? "503 Service Unavailable" : !userId ? "401 Unauthorized" : !options.apiKey ? "503 Service Unavailable" : null;
     if (status) {
       socket.end(`HTTP/1.1 ${status}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
       return;
@@ -163,6 +164,7 @@ function bridge(client: WebSocket, options: LiveOptions, userId: string) {
     if (message.type === "session.close") { closeUpstream(message.cancel_research === true); return; }
     if (closing) return;
     if (!upstream) {
+      if (message.agent_mode === "dot") { fail("Dot voice routing is not available. Use the dot text bridge."); return; }
       if (message.type !== "chime.session.start") { fail("Start a session before sending audio."); return; }
       if (message.research_forget === true && options.background) {
         try { options.background.forget(userId); }

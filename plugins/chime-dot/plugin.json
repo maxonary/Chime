@@ -1,0 +1,6 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "chime-dot",
+  "version": "0.1.0",
+  "description": "Draft Chime text bridge: receive message.created events and reply through a narrowly scoped MCP server. Requires authorized OAuth setup."
+}

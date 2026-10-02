@@ -16,7 +16,10 @@
     "@anthropic-ai/sdk": "^0.115.0",
     "dotenv": "^17.0.0",
     "express": "^5.1.0",
+    "ipaddr.js": "^2.5.0",
+    "jose": "^6.2.12",
     "livekit-server-sdk": "^2.17.0",
+    "standardwebhooks": "^1.1.1",
     "ws": "^8.18.0"
   },
   "devDependencies": {
