@@ -2,7 +2,12 @@
 set -euo pipefail
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 # Match the compiler used for distribution; do not silently fall back to an older SDK.
-xcodebuild -version | head -1 | grep -E '^Xcode 27\.'
+xcode_version=$(xcodebuild -version)
+printf '%s\n' "$xcode_version"
+if [[ "$xcode_version" != "Xcode 27."* ]]; then
+  echo "Xcode 27 is required" >&2
+  exit 1
+fi
 ./scripts/check-watch.sh
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/chime-apple-ci.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
